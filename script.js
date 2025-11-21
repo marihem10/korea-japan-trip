@@ -202,40 +202,40 @@ window.filterCategory = function(category) {
     filtered.forEach(loc => {
         var marker = L.marker([loc.lat, loc.lng]);
         
-        // ⭐ [핵심] 현재 언어에 따라 이름 고르기
-        // 일본어 모드면 name_ja를 보여주고, 없으면 그냥 한국어 name 보여줌
+        // 일본어 모드면 일본어 이름 보여주기
         let displayName = loc.name;
         if (currentLang === 'ja' && loc.name_ja) {
             displayName = loc.name_ja;
         }
 
+        // ⭐ 팝업 내용 만들기 (여기에 버튼이 들어가야 함!)
         const popupContent = `
-        <div class="popup-content">
-            <span class="popup-title">${displayName}</span>
-            
-            <button class="weather-btn" onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
-                <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
-            </button>
-            
-            <div style="display:flex; gap:5px; justify-content:center; margin-top:5px;">
-                <button class="weather-btn" style="background: #FF9966; flex:1;" 
-                        onclick="openReviewModal('${loc.id}', '${displayName}')">
-                    <i class="fas fa-pen"></i> 쓰기
+            <div class="popup-content">
+                <span class="popup-title">${displayName}</span>
+                
+                <button class="weather-btn" onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
+                    <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
                 </button>
-                <button class="weather-btn" style="background: #6699FF; flex:1;" 
-                        onclick="openReadReviewModal('${loc.id}')">
-                    <i class="fas fa-book"></i> 보기
-                </button>
-            </div>
-            <br>
+                
+                <div style="display:flex; gap:5px; justify-content:center; margin-top:5px;">
+                    <button class="weather-btn" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); flex:1; padding:6px 10px;" 
+                            onclick="openReviewModal('${loc.id}', '${displayName}')">
+                        <i class="fas fa-pen"></i> 쓰기
+                    </button>
+                    <button class="weather-btn" style="background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%); flex:1; padding:6px 10px;" 
+                            onclick="openReadReviewModal('${loc.id}')">
+                        <i class="fas fa-book"></i> 보기
+                    </button>
+                </div>
+                <br>
 
-            <div class="like-box" onclick="toggleLike('${loc.id}')">
-                <i class="fas fa-heart"></i>
-                <span class="like-count">${loc.likes || 0}</span>
-                <span style="font-size:12px; margin-left:3px;">${t.popup_like}</span>
+                <div class="like-box" onclick="toggleLike('${loc.id}')">
+                    <i class="fas fa-heart"></i>
+                    <span class="like-count">${loc.likes || 0}</span>
+                    <span style="font-size:12px; margin-left:3px;">${t.popup_like}</span>
+                </div>
             </div>
-        </div>
-    `;
+        `;
         
         marker.bindPopup(popupContent);
         marker.on('click', () => { map.flyTo([loc.lat, loc.lng], 14, { duration: 1.5 }); });
