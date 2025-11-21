@@ -273,6 +273,97 @@ window.toggleLanguage = function() {
     filterCategory(currentCategory);
 }
 
+// script.js 파일의 6. 언어 전환 함수 부분 뒤에 추가
+// -----------------------------------------------------------
+// 7. 검색 기능 (추가)
+// -----------------------------------------------------------
+document.getElementById('search-input').addEventListener('input', function(e) {
+    const searchText = e.target.value.toLowerCase();
+    
+    // 현재 활성화된 카테고리 필터링 결과를 가져와서 한 번 더 필터링
+    const activeCategory = document.querySelector('.filter-btn.active').dataset.category;
+    const filteredByCategory = activeCategory === 'all' 
+        ? locations 
+        : locations.filter(loc => loc.category === activeCategory);
+    
+    // 검색 텍스트로 필터링
+    const filteredBySearch = filteredByCategory.filter(loc => {
+        const koName = loc.name.toLowerCase();
+        const jaName = loc.name_ja ? loc.name_ja.toLowerCase() : '';
+        return koName.includes(searchText) || jaName.includes(searchText);
+    });
+    
+    // 필터링된 결과로 지도 핀을 다시 그립니다.
+    redrawMarkers(filteredBySearch);
+});
+
+// filterCategory 함수에서 마커를 다시 그리는 로직을 별도 함수로 분리
+function redrawMarkers(data) {
+    markerCluster.clearLayers();
+    const t = translations[currentLang]; 
+
+    data.forEach(loc => {
+        var marker = L.marker([loc.lat, loc.lng]);
+        
+        let displayName = loc.name;
+        if (currentLang === 'ja' && loc.name_ja) {
+            displayName = loc.name_ja;
+        }
+
+        const popupContent = `
+            <div class="popup-content">
+                <span class="popup-title">${displayName}</span>
+                <button class="weather-btn" onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
+                    <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
+                </button>
+                <br>
+                <div class="like-box" onclick="toggleLike('${loc.id}')">
+                    <i class="fas fa-heart"></i>
+                    <span class="like-count">${loc.likes || 0}</span>
+                    <span style="font-size:12px; margin-left:3px;">${t.popup_like}</span>
+                </div>
+            </div>
+        `;
+        
+        marker.bindPopup(popupContent);
+        marker.on('click', () => { map.flyTo([loc.lat, loc.lng], 14, { duration: 1.5 }); });
+        markerCluster.addLayer(marker);
+    });
+}
+
+// filterCategory 함수 변경: 마지막 부분만 수정
+window.filterCategory = function(category) {
+    // ... (중략) ...
+    const filtered = category === 'all' 
+        ? locations 
+        : locations.filter(loc => loc.category === category);
+
+    // 검색창의 텍스트가 있다면, 검색어 기준으로 한 번 더 필터링
+    const searchText = document.getElementById('search-input').value.toLowerCase();
+    const finalFiltered = searchText 
+        ? filtered.filter(loc => {
+            const koName = loc.name.toLowerCase();
+            const jaName = loc.name_ja ? loc.name_ja.toLowerCase() : '';
+            return koName.includes(searchText) || jaName.includes(searchText);
+        })
+        : filtered;
+
+    redrawMarkers(finalFiltered); // 새로 분리한 함수 호출
+    updateBtnStyle(category);
+}
+
+// onSnapshot 함수 변경: 초기 로드 시에도 redrawMarkers 사용
+onSnapshot(placesCol, (snapshot) => {
+    locations = []; 
+    snapshot.forEach((doc) => {
+        locations.push({ id: doc.id, ...doc.data() });
+    });
+    
+    const activeBtn = document.querySelector('.filter-btn.active');
+    const currentCategory = activeBtn ? activeBtn.dataset.category : 'all';
+    // filterCategory를 호출하면 내부에서 redrawMarkers를 호출합니다.
+    filterCategory(currentCategory); 
+});
 
 // ==========================================
 // 🚨 [데이터 업로드 도구]
