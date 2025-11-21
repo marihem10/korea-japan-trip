@@ -51,7 +51,10 @@ const translations = {
         placeholder_review: "이곳의 후기를 남겨주세요! (예: 야경이 정말 예뻐요)",
         btn_submit: "등록하기",
         no_reviews: "아직 작성된 리뷰가 없어요.<br>첫 번째 리뷰를 남겨보세요! ✍️",
-        msg_loading: "로딩중... ⌛"
+        msg_loading: "로딩중... ⌛",
+        score_unit: "점",
+        alert_input_empty: "내용을 입력해주세요!",
+        alert_success: "리뷰가 등록되었습니다!"
     },
     ja: {
         placeholder: "どこへ行きますか？",
@@ -76,7 +79,10 @@ const translations = {
         placeholder_review: "ここに感想を残してください！ (例: 夜景がとても綺麗です)",
         btn_submit: "登録する",
         no_reviews: "まだレビューがありません。<br>最初のレビューを投稿しましょう！ ✍️",
-        msg_loading: "読み込み中... ⌛"
+        msg_loading: "読み込み中... ⌛",
+        score_unit: "点",
+        alert_input_empty: "内容を入力してください！",
+        alert_success: "レビューが登録されました！"
     }
 };
 
@@ -211,8 +217,6 @@ window.toggleLike = async function(docId) {
     let myLikes = JSON.parse(localStorage.getItem('myLikedPlaces')) || [];
     const isLiked = myLikes.includes(docId);
 
-    // ⭐ [핵심] 서버보다 '내 컴퓨터(localStorage)'를 먼저 업데이트해야 함!
-    // 그래야 지도가 다시 그려질 때 빨간색으로 나옴
     if (isLiked) {
         // 이미 눌렀으니 취소 (목록에서 제거)
         myLikes = myLikes.filter(id => id !== docId);
@@ -377,6 +381,8 @@ window.toggleLanguage = function() {
     document.getElementById('modal-read-title').innerText = t.modal_read_title;
     document.getElementById('review-text').placeholder = t.placeholder_review;
     document.getElementById('btn-submit').innerText = t.btn_submit;
+    const currentScore = document.getElementById('review-rating').value;
+    document.getElementById('rating-value').innerText = currentScore + t.score_unit;
     
     fetchExchangeRate(); 
 
@@ -404,7 +410,9 @@ window.closeReviewModal = function() {
 
 window.setRating = function(score) {
     document.getElementById('review-rating').value = score;
-    document.getElementById('rating-value').innerText = score + "점";
+
+    const t = translations[currentLang]; 
+    document.getElementById('rating-value').innerText = score + t.score_unit;
     
     const stars = document.querySelectorAll('.star-rating span');
     stars.forEach((star, index) => {
@@ -416,8 +424,12 @@ window.setRating = function(score) {
 window.submitReview = async function() {
     const text = document.getElementById('review-text').value;
     const rating = document.getElementById('review-rating').value;
+    const t = translations[currentLang];
 
-    if (!text) { alert("내용을 입력해주세요!"); return; }
+    if (!text) { 
+        alert(t.alert_input_empty); // "내용을 입력해주세요" or "内容を入力..."
+        return; 
+    }
 
     try {
         await addDoc(collection(db, "reviews"), {
@@ -427,18 +439,17 @@ window.submitReview = async function() {
             createdAt: new Date().toISOString() 
         });
 
-        alert("리뷰가 등록되었습니다!");
+        alert(t.alert_success); // "리뷰가 등록되었습니다" or "レビューが登録..."
         closeReviewModal();
     } catch (e) {
         console.error("리뷰 저장 실패:", e);
-        alert("오류가 발생했습니다.");
+        alert("Error.");
     }
 }
 
 window.openReadReviewModal = async function(placeId) {
     const container = document.getElementById('review-list-container');
     const modal = document.getElementById('read-review-modal');
-    
     const t = translations[currentLang]; 
     
     modal.style.display = 'flex';
@@ -461,20 +472,17 @@ window.openReadReviewModal = async function(placeId) {
                 const data = doc.data();
                 const stars = "⭐".repeat(data.rating);
                 
-                // ⭐ [수정됨] 날짜 변환 로직 (시간까지 포함!)
+                // 날짜 변환
                 let dateStr = data.createdAt;
-                
                 const dateObj = new Date(data.createdAt);
-                if (!isNaN(dateObj.getTime())) { // 유효한 날짜인지 확인
-                    // 'DateString' -> 'String'으로 변경 (시간 포함됨)
-                    if (currentLang === 'ko') {
-                        // 🇰🇷 한국어: 2025. 11. 21. 오후 2:30:00
-                        dateStr = dateObj.toLocaleString('ko-KR');
-                    } else {
-                        // 🇯🇵 일본어: 2025/11/21 14:30:00
-                        dateStr = dateObj.toLocaleString('ja-JP');
-                    }
+                if (!isNaN(dateObj.getTime())) { 
+                    if (currentLang === 'ko') dateStr = dateObj.toLocaleString('ko-KR');
+                    else dateStr = dateObj.toLocaleString('ja-JP');
                 }
+
+                // 텍스트에 따옴표가 있으면 오류나니까 안전하게 처리
+                const safeText = data.text.replace(/"/g, '&quot;').replace(/'/g, "&#39;");
+                const btnText = currentLang === 'ko' ? "🤖 번역" : "🤖 翻訳";
 
                 html += `
                     <div class="review-item">
@@ -482,7 +490,14 @@ window.openReadReviewModal = async function(placeId) {
                             <span class="review-stars">${stars}</span>
                             <span style="color:#aaa; font-size:11px;">${dateStr}</span> 
                         </div>
-                        <div class="review-text">${data.text}</div>
+                        <div class="review-text" id="review-text-${doc.id}" style="margin-bottom: 5px;">${data.text}</div>
+                        
+                        <div id="trans-result-${doc.id}" style="font-size:13px; color:#4facfe; margin-bottom:5px; display:none;"></div>
+
+                        <button onclick="translateReview('${doc.id}', '${safeText}')" 
+                        style="font-size:11px; background:none; border:1px solid #ccc; border-radius:12px; padding:2px 8px; cursor:pointer; color:#555;">
+                        ${btnText}
+                        </button>
                     </div>
                 `;
             });
@@ -498,6 +513,62 @@ window.openReadReviewModal = async function(placeId) {
 window.closeReadReviewModal = function() {
     document.getElementById('read-review-modal').style.display = 'none';
 }
+
+// ==========================================
+// MyMemory 무료 번역 API 함수
+// ==========================================
+window.translateReview = async function(docId, text) {
+    const resultBox = document.getElementById(`trans-result-${docId}`);
+    
+    if (resultBox.style.display === 'block') {
+        resultBox.style.display = 'none';
+        return;
+    }
+
+    resultBox.style.display = 'block';
+    resultBox.innerText = "Translating... ⌛";
+
+    try {
+        // 목표 언어(Target) = 현재 사이트 언어(currentLang)
+        // 출발 언어(Source) = 자동 감지(Autodetect)
+        
+        // 예: 한국어(KR) 모드일 때 -> 결과물은 무조건 '한국어'여야 함.
+        // 예: 일본어(JP) 모드일 때 -> 결과물은 무조건 '일본어'여야 함.
+        
+        const targetLang = currentLang; 
+
+        // API 요청: langpair=Autodetect|도착언어
+        const url = `https://api.mymemory.translated.net/get?q=${encodeURIComponent(text)}&langpair=Autodetect|${targetLang}`;
+        
+        const response = await fetch(url);
+        const data = await response.json();
+        
+        const translatedText = data.responseData.translatedText;
+
+        // 1. API가 "야, 원문이랑 도착 언어가 똑같잖아!" 라고 에러를 보낸 경우
+        if (translatedText.includes("PLEASE SELECT TWO DISTINCT LANGUAGES") || 
+            translatedText.includes("IS INVALID")) {
+            
+            resultBox.innerText = "ℹ️ " + (currentLang === 'ko' ? "이미 한국어입니다." : "すでに日本語です。");
+            
+        } 
+        // 2. 번역된 결과가 원문이랑 토씨 하나 안 틀리고 똑같은 경우 (혹시 몰라서 확인)
+        else if (translatedText.trim() === text.trim()) {
+            
+            resultBox.innerText = "ℹ️ " + (currentLang === 'ko' ? "이미 한국어입니다." : "すでに日本語です。");
+            
+        } 
+        // 3. 정상 번역
+        else {
+            resultBox.innerText = "✅ " + translatedText;
+        }
+
+    } catch (e) {
+        console.error("번역 에러:", e);
+        resultBox.innerText = "Network Error";
+    }
+}
+
 
 // -----------------------------------------------------------
 // 8. 데이터 업로드 (필요할 때만 주석 풀기)
