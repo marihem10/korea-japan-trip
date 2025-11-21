@@ -30,7 +30,8 @@ let currentLang = 'ko'; // 기본 언어
 const translations = {
     ko: {
         placeholder: "어디로 떠나볼까요?",
-        all: "전체", food: "🍜 맛집", view: "🏰 관광", culture: "💛 문화",
+        all: "전체", food: "🍜 맛집", view: "🏰 관광", culture: "💛 문화", station: "🚇 교통",
+
         exchangeTitle: "🇯🇵 JPY 100 ➔ 🇰🇷 KRW",
         starbucks: "스벅 라떼가 한국보다",
         cheap: "원 싸요!", expensive: "원 비싸요.",
@@ -43,13 +44,13 @@ const translations = {
         w_cold: "너무 추워요! 패딩 필수 🧣",
         popup_weather: "날씨 확인",
         popup_like: "좋아요",
-        
         review_write: "리뷰 쓰기",
         review_read: "리뷰 보기"
     },
     ja: {
         placeholder: "どこへ行きますか？",
-        all: "すべて", food: "🍜 グルメ", view: "🏰 観光", culture: "💛 文化",
+        all: "すべて", food: "🍜 グルメ", view: "🏰 観光", culture: "💛 文化", station: "🚇 交通",
+
         exchangeTitle: "🇰🇷 KRW 1000 ➔ 🇯🇵 JPY",
         starbucks: "スタバのラテが日本より",
         cheap: "円 安い！", expensive: "円 高い。",
@@ -62,7 +63,6 @@ const translations = {
         w_cold: "寒いです！ダウン必須 🧣",
         popup_weather: "天気予報",
         popup_like: "いいね",
-
         review_write: "レビューを書く",
         review_read: "レビューを見る"
     }
@@ -217,11 +217,10 @@ window.toggleLike = async function(docId) {
 // -----------------------------------------------------------
 // [공통 함수] 지도에 핀(마커) 찍기 - 모든 기능 통합 (리뷰 버튼 포함!)
 // -----------------------------------------------------------
+// [수정] 공통 함수 (팝업 넓히기 + 버튼 완벽 중앙 정렬)
 function updateMapMarkers(targetLocations) {
     markerCluster.clearLayers(); 
     const t = translations[currentLang]; 
-    
-    // 내 좋아요 목록 가져오기
     const myLikes = JSON.parse(localStorage.getItem('myLikedPlaces')) || [];
 
     targetLocations.forEach(loc => {
@@ -234,30 +233,30 @@ function updateMapMarkers(targetLocations) {
 
         const isLiked = myLikes.includes(loc.id);
         const heartColor = isLiked ? "#ff4757" : "#ccc"; 
-        const heartIcon = isLiked ? "fas" : "far"; // 꽉 찬 하트 vs 빈 하트
+        const heartIcon = isLiked ? "fas" : "far"; 
 
-        // ⭐ [디자인 수정] 버튼들을 세로로 꽉 차게 배치
+        // ⭐ [수정 1] min-width를 220px로 늘려서 버튼들이 숨 쉴 공간을 줌
         const popupContent = `
-            <div class="popup-content" style="min-width: 180px; display: flex; flex-direction: column; gap: 8px;">
-                <span class="popup-title" style="margin-bottom: 5px;">${displayName}</span>
+            <div class="popup-content" style="min-width: 220px; display: flex; flex-direction: column; gap: 8px;">
+                <span class="popup-title" style="margin-bottom: 5px; font-size: 15px;">${displayName}</span>
                 
-                <button class="weather-btn" style="width: 100%; justify-content: center;" 
+                <button class="weather-btn" style="width: 100%; display: flex; justify-content: center; align-items: center;" 
                         onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
                     <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
                 </button>
                 
-                <div style="display:flex; gap:5px; width: 100%;">
-                    <button class="weather-btn" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); flex:1; justify-content: center; margin:0;" 
+                <div style="display:flex; gap:6px; width: 100%;">
+                    <button class="weather-btn" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); flex:1; display: flex; justify-content: center; align-items: center; margin:0; padding: 8px 0;" 
                             onclick="openReviewModal('${loc.id}', '${displayName}')">
                         <i class="fas fa-pen"></i> ${t.review_write}
                     </button>
-                    <button class="weather-btn" style="background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%); flex:1; justify-content: center; margin:0;" 
+                    <button class="weather-btn" style="background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%); flex:1; display: flex; justify-content: center; align-items: center; margin:0; padding: 8px 0;" 
                             onclick="openReadReviewModal('${loc.id}')">
                         <i class="fas fa-book"></i> ${t.review_read}
                     </button>
                 </div>
                 
-                <button class="weather-btn" style="width: 100%; background: white; border: 1px solid #ddd; color: #333; justify-content: center; margin:0;" 
+                <button class="weather-btn" style="width: 100%; background: white; border: 1px solid #ddd; color: #333; display: flex; justify-content: center; align-items: center; margin:0;" 
                         onclick="toggleLike('${loc.id}')">
                     <i class="${heartIcon} fa-heart" style="color: ${heartColor}; margin-right: 5px;"></i>
                     <span style="font-weight:bold; color:${heartColor};">${loc.likes || 0}</span>
@@ -268,29 +267,24 @@ function updateMapMarkers(targetLocations) {
         
         marker.bindPopup(popupContent);
         
-        // 클릭했을 때 "이 장소를 보고 있다"고 기억하기
+        // 팝업 유지 로직
         marker.on('click', () => { 
-            selectedPlaceId = loc.id; // ⭐ ID 기억!
+            selectedPlaceId = loc.id; 
             map.flyTo([loc.lat, loc.lng], 14, { duration: 1.5 }); 
         });
         
-        // 팝업 닫으면 기억 지우기
         marker.on('popupclose', () => {
-            // 약간의 딜레이를 줘서 재렌더링 때문에 닫히는 것과 구분
             setTimeout(() => {
                 if (selectedPlaceId === loc.id) {
-                    // selectedPlaceId = null; // (이 줄은 주석 처리: 재렌더링 시 유지를 위해)
+                    // 닫힘 감지 (필요 시 로직 추가)
                 }
             }, 100);
         });
 
         markerCluster.addLayer(marker);
 
-        // ⭐ 만약 아까 보고 있던 그 장소라면? 팝업 다시 열기!
         if (selectedPlaceId === loc.id) {
-            setTimeout(() => {
-                marker.openPopup();
-            }, 100); // 지도가 그려질 시간을 살짝 줌
+            setTimeout(() => { marker.openPopup(); }, 100);
         }
     });
 }
@@ -333,23 +327,22 @@ function updateBtnStyle(category) {
 // -----------------------------------------------------------
 window.toggleLanguage = function() {
     currentLang = currentLang === 'ko' ? 'ja' : 'ko';
-    
     document.getElementById('lang-icon').innerText = currentLang === 'ko' ? "🇰🇷" : "🇯🇵";
-
     const t = translations[currentLang];
     
+    // 기존 텍스트 변경
     document.getElementById('search-input').placeholder = t.placeholder;
     document.getElementById('btn-all').innerText = t.all;
     document.getElementById('btn-food').innerText = t.food;
     document.getElementById('btn-view').innerText = t.view;
     document.getElementById('btn-culture').innerText = t.culture;
+    document.getElementById('btn-station').innerText = t.station;
     document.getElementById('exchange-title').innerText = t.exchangeTitle;
     document.getElementById('city-name').innerText = t.cityNeed; 
     document.querySelector('.weather-desc').innerText = t.weatherDesc;
     
     fetchExchangeRate(); 
 
-    // 지도 핀 새로고침
     const activeBtn = document.querySelector('.filter-btn.active');
     const currentCategory = activeBtn ? activeBtn.dataset.category : 'all';
     filterCategory(currentCategory);
