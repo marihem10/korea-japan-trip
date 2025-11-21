@@ -84,6 +84,9 @@ var markerCluster = L.markerClusterGroup({
 });
 map.addLayer(markerCluster);
 
+// ⭐ 현재 열려있는 팝업(장소)의 ID를 기억하는 변수
+let selectedPlaceId = null; 
+
 
 // -----------------------------------------------------------
 // 4. 기능 함수들 (환율, 날씨)
@@ -187,31 +190,24 @@ onSnapshot(placesCol, (snapshot) => {
 });
 
 window.toggleLike = async function(docId) {
+    // ⭐ 좋아요 누른 순간, 이 장소를 계속 보고 있다고 설정
+    selectedPlaceId = docId; 
+
     const docRef = doc(db, "places", docId);
-    
-    // 1. 내 브라우저에 저장된 '좋아요 목록' 가져오기
     let myLikes = JSON.parse(localStorage.getItem('myLikedPlaces')) || [];
 
     try {
         if (myLikes.includes(docId)) {
-            // 💔 이미 눌렀다면? -> 취소하기 (숫자 -1)
             await updateDoc(docRef, { likes: increment(-1) });
-            
-            // 목록에서 제거
             myLikes = myLikes.filter(id => id !== docId);
             localStorage.setItem('myLikedPlaces', JSON.stringify(myLikes));
-            
-            console.log("좋아요 취소");
         } else {
-            // ❤️ 안 눌렀다면? -> 좋아요 (숫자 +1)
             await updateDoc(docRef, { likes: increment(1) });
-            
-            // 목록에 추가
             myLikes.push(docId);
             localStorage.setItem('myLikedPlaces', JSON.stringify(myLikes));
-            
-            console.log("좋아요 성공");
         }
+        // (참고: 여기서 화면 갱신은 onSnapshot이 알아서 처리하고, 
+        // updateMapMarkers 안의 로직 덕분에 팝업이 다시 열립니다)
     } catch (e) {
         console.error("좋아요 실패:", e);
         alert("오류가 발생했습니다.");
@@ -225,7 +221,7 @@ function updateMapMarkers(targetLocations) {
     markerCluster.clearLayers(); 
     const t = translations[currentLang]; 
     
-    // ⭐ 내 브라우저에 저장된 '좋아요 목록' 미리 가져오기
+    // 내 좋아요 목록 가져오기
     const myLikes = JSON.parse(localStorage.getItem('myLikedPlaces')) || [];
 
     targetLocations.forEach(loc => {
@@ -236,40 +232,66 @@ function updateMapMarkers(targetLocations) {
             displayName = loc.name_ja;
         }
 
-        // ⭐ 내가 좋아요 누른 곳이면 빨간색(#ff4757), 아니면 회색(#ccc)
         const isLiked = myLikes.includes(loc.id);
         const heartColor = isLiked ? "#ff4757" : "#ccc"; 
+        const heartIcon = isLiked ? "fas" : "far"; // 꽉 찬 하트 vs 빈 하트
 
+        // ⭐ [디자인 수정] 버튼들을 세로로 꽉 차게 배치
         const popupContent = `
-            <div class="popup-content">
-                <span class="popup-title">${displayName}</span>
+            <div class="popup-content" style="min-width: 180px; display: flex; flex-direction: column; gap: 8px;">
+                <span class="popup-title" style="margin-bottom: 5px;">${displayName}</span>
                 
-                <button class="weather-btn" onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
+                <button class="weather-btn" style="width: 100%; justify-content: center;" 
+                        onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
                     <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
                 </button>
                 
-                <div style="display:flex; gap:5px; justify-content:center; margin-top:5px;">
-                    <button class="weather-btn" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); flex:1; padding:6px 5px; font-size:11px;" 
+                <div style="display:flex; gap:5px; width: 100%;">
+                    <button class="weather-btn" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); flex:1; justify-content: center; margin:0;" 
                             onclick="openReviewModal('${loc.id}', '${displayName}')">
                         <i class="fas fa-pen"></i> ${t.review_write}
                     </button>
-                    <button class="weather-btn" style="background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%); flex:1; padding:6px 5px; font-size:11px;" 
+                    <button class="weather-btn" style="background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%); flex:1; justify-content: center; margin:0;" 
                             onclick="openReadReviewModal('${loc.id}')">
                         <i class="fas fa-book"></i> ${t.review_read}
                     </button>
                 </div>
                 
-                <div class="like-box" style="margin-top: 8px;" onclick="toggleLike('${loc.id}')">
-                    <i class="fas fa-heart" style="color: ${heartColor}; transition: color 0.3s;"></i>
-                    <span class="like-count" style="color: ${heartColor};">${loc.likes || 0}</span>
-                    <span style="font-size:12px; margin-left:3px; color:#555;">${t.popup_like}</span>
-                </div>
+                <button class="weather-btn" style="width: 100%; background: white; border: 1px solid #ddd; color: #333; justify-content: center; margin:0;" 
+                        onclick="toggleLike('${loc.id}')">
+                    <i class="${heartIcon} fa-heart" style="color: ${heartColor}; margin-right: 5px;"></i>
+                    <span style="font-weight:bold; color:${heartColor};">${loc.likes || 0}</span>
+                    <span style="font-size:11px; color:#888; margin-left:5px;">${t.popup_like}</span>
+                </button>
             </div>
         `;
         
         marker.bindPopup(popupContent);
-        marker.on('click', () => { map.flyTo([loc.lat, loc.lng], 14, { duration: 1.5 }); });
+        
+        // 클릭했을 때 "이 장소를 보고 있다"고 기억하기
+        marker.on('click', () => { 
+            selectedPlaceId = loc.id; // ⭐ ID 기억!
+            map.flyTo([loc.lat, loc.lng], 14, { duration: 1.5 }); 
+        });
+        
+        // 팝업 닫으면 기억 지우기
+        marker.on('popupclose', () => {
+            // 약간의 딜레이를 줘서 재렌더링 때문에 닫히는 것과 구분
+            setTimeout(() => {
+                if (selectedPlaceId === loc.id) {
+                    // selectedPlaceId = null; // (이 줄은 주석 처리: 재렌더링 시 유지를 위해)
+                }
+            }, 100);
+        });
+
         markerCluster.addLayer(marker);
+
+        // ⭐ 만약 아까 보고 있던 그 장소라면? 팝업 다시 열기!
+        if (selectedPlaceId === loc.id) {
+            setTimeout(() => {
+                marker.openPopup();
+            }, 100); // 지도가 그려질 시간을 살짝 줌
+        }
     });
 }
 
