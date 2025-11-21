@@ -221,6 +221,8 @@ window.toggleLike = async function(docId) {
 function updateMapMarkers(targetLocations) {
     markerCluster.clearLayers(); 
     const t = translations[currentLang]; 
+    
+    // 내 컴퓨터에 저장된 '좋아요 목록' 가져오기
     const myLikes = JSON.parse(localStorage.getItem('myLikedPlaces')) || [];
 
     targetLocations.forEach(loc => {
@@ -231,11 +233,13 @@ function updateMapMarkers(targetLocations) {
             displayName = loc.name_ja;
         }
 
+        // ⭐ [색상 로직 확인]
+        // 목록에 들어있으면(isLiked) -> 빨간색(#ff4757) + 꽉 찬 하트(fas)
+        // 없으면 -> 회색(#ccc) + 빈 하트(far)
         const isLiked = myLikes.includes(loc.id);
         const heartColor = isLiked ? "#ff4757" : "#ccc"; 
         const heartIcon = isLiked ? "fas" : "far"; 
 
-        // ⭐ [수정 1] min-width를 220px로 늘려서 버튼들이 숨 쉴 공간을 줌
         const popupContent = `
             <div class="popup-content" style="min-width: 220px; display: flex; flex-direction: column; gap: 8px;">
                 <span class="popup-title" style="margin-bottom: 5px; font-size: 15px;">${displayName}</span>
@@ -276,7 +280,7 @@ function updateMapMarkers(targetLocations) {
         marker.on('popupclose', () => {
             setTimeout(() => {
                 if (selectedPlaceId === loc.id) {
-                    // 닫힘 감지 (필요 시 로직 추가)
+                    // 닫힘 감지
                 }
             }, 100);
         });
