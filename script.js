@@ -23,7 +23,7 @@ const db = getFirestore(app);
 
 
 // -----------------------------------------------------------
-// ⭐ [중요] 다국어 설정 (가장 먼저 정의해야 함!)
+// ⭐ 다국어 설정
 // -----------------------------------------------------------
 let currentLang = 'ko'; // 기본 언어
 
@@ -87,7 +87,6 @@ async function fetchExchangeRate() {
     const descEl = document.querySelector('.exchange-desc');
     const rateEl = document.getElementById('rate-text');
     
-    // ⭐ 이제 translations가 위에 있어서 에러 안 남!
     const t = translations[currentLang]; 
 
     try {
@@ -123,9 +122,8 @@ async function fetchExchangeRate() {
         rateEl.innerText = "Error";
     }
 }
-fetchExchangeRate(); // 실행
+fetchExchangeRate(); 
 
-// 날씨 함수
 window.fetchWeather = async function(lat, lng, cityName) {
     try {
         const t = translations[currentLang]; 
@@ -164,7 +162,7 @@ window.fetchWeather = async function(lat, lng, cityName) {
 
 
 // -----------------------------------------------------------
-// 5. Firebase 데이터 연동 & 좋아요 & 필터
+// 5. Firebase 데이터 연동 & 로직 통합
 // -----------------------------------------------------------
 var locations = [];
 
@@ -176,6 +174,7 @@ onSnapshot(placesCol, (snapshot) => {
         locations.push({ id: doc.id, ...doc.data() });
     });
     
+    // 데이터 로드 후 현재 필터 상태에 맞춰 갱신
     const activeBtn = document.querySelector('.filter-btn.active');
     const currentCategory = activeBtn ? activeBtn.dataset.category : 'all';
     filterCategory(currentCategory);
@@ -192,22 +191,20 @@ window.toggleLike = async function(docId) {
 }
 
 // -----------------------------------------------------------
-// [공통 함수] 지도에 핀(마커) 찍기 - 모든 기능 통합
+// [공통 함수] 지도에 핀(마커) 찍기 - 모든 기능 통합 (리뷰 버튼 포함!)
 // -----------------------------------------------------------
 function updateMapMarkers(targetLocations) {
-    markerCluster.clearLayers(); // 기존 핀 지우기
-    const t = translations[currentLang]; // 현재 언어
+    markerCluster.clearLayers(); 
+    const t = translations[currentLang]; 
 
     targetLocations.forEach(loc => {
         var marker = L.marker([loc.lat, loc.lng]);
         
-        // 언어에 따른 이름 표시
         let displayName = loc.name;
         if (currentLang === 'ja' && loc.name_ja) {
             displayName = loc.name_ja;
         }
 
-        // ⭐ 팝업 내용 (여기에 모든 버튼이 다 들어있음!)
         const popupContent = `
             <div class="popup-content">
                 <span class="popup-title">${displayName}</span>
@@ -242,33 +239,27 @@ function updateMapMarkers(targetLocations) {
     });
 }
 
-// [수정] 카테고리 버튼 눌렀을 때
+// [카테고리 필터]
 window.filterCategory = function(category) {
     const filtered = category === 'all' 
         ? locations 
         : locations.filter(loc => loc.category === category);
 
-    // 공통 함수 호출 (핀 찍어줘!)
-    updateMapMarkers(filtered);
-    
-    // 버튼 색깔 바꾸기
+    updateMapMarkers(filtered); // 공통 함수 호출
     updateBtnStyle(category);
 }
 
-// [추가] 검색 기능 (검색창에 입력할 때마다 실행)
+// [검색 기능]
 document.getElementById('search-input').addEventListener('input', function(e) {
-    const searchTerm = e.target.value.toLowerCase(); // 입력한 글자 (소문자로 변환)
+    const searchTerm = e.target.value.toLowerCase(); 
 
-    // 이름(한국어 or 일본어)에 검색어가 포함된 장소만 찾기
     const searched = locations.filter(loc => {
         const koName = loc.name.toLowerCase();
         const jaName = loc.name_ja ? loc.name_ja.toLowerCase() : "";
-        
         return koName.includes(searchTerm) || jaName.includes(searchTerm);
     });
 
-    // 찾은 장소들로 핀 다시 찍기 (공통 함수 사용 -> 리뷰 버튼 나옴!)
-    updateMapMarkers(searched);
+    updateMapMarkers(searched); // 공통 함수 호출
 });
 
 function updateBtnStyle(category) {
@@ -291,168 +282,44 @@ window.toggleLanguage = function() {
 
     const t = translations[currentLang];
     
-    // 텍스트 갈아끼우기
     document.getElementById('search-input').placeholder = t.placeholder;
     document.getElementById('btn-all').innerText = t.all;
     document.getElementById('btn-food').innerText = t.food;
     document.getElementById('btn-view').innerText = t.view;
     document.getElementById('btn-culture').innerText = t.culture;
     document.getElementById('exchange-title').innerText = t.exchangeTitle;
-    
-    // ⭐ [추가] 여기가 빠져있어서 번역이 안 됐던 겁니다!
     document.getElementById('city-name').innerText = t.cityNeed; 
-    
     document.querySelector('.weather-desc').innerText = t.weatherDesc;
     
-    // 기능 새로고침
     fetchExchangeRate(); 
 
+    // 지도 핀 새로고침
     const activeBtn = document.querySelector('.filter-btn.active');
     const currentCategory = activeBtn ? activeBtn.dataset.category : 'all';
     filterCategory(currentCategory);
 }
 
-// script.js 파일의 6. 언어 전환 함수 부분 뒤에 추가
 // -----------------------------------------------------------
-// 7. 검색 기능 (추가)
+// 7. 리뷰 모달 기능
 // -----------------------------------------------------------
-document.getElementById('search-input').addEventListener('input', function(e) {
-    const searchText = e.target.value.toLowerCase();
-    
-    // 현재 활성화된 카테고리 필터링 결과를 가져와서 한 번 더 필터링
-    const activeCategory = document.querySelector('.filter-btn.active').dataset.category;
-    const filteredByCategory = activeCategory === 'all' 
-        ? locations 
-        : locations.filter(loc => loc.category === activeCategory);
-    
-    // 검색 텍스트로 필터링
-    const filteredBySearch = filteredByCategory.filter(loc => {
-        const koName = loc.name.toLowerCase();
-        const jaName = loc.name_ja ? loc.name_ja.toLowerCase() : '';
-        return koName.includes(searchText) || jaName.includes(searchText);
-    });
-    
-    // 필터링된 결과로 지도 핀을 다시 그립니다.
-    redrawMarkers(filteredBySearch);
-});
+let currentReviewPlaceId = null;
 
-// filterCategory 함수에서 마커를 다시 그리는 로직을 별도 함수로 분리
-function redrawMarkers(data) {
-    markerCluster.clearLayers();
-    const t = translations[currentLang]; 
-
-    data.forEach(loc => {
-        var marker = L.marker([loc.lat, loc.lng]);
-        
-        let displayName = loc.name;
-        if (currentLang === 'ja' && loc.name_ja) {
-            displayName = loc.name_ja;
-        }
-
-        const popupContent = `
-            <div class="popup-content">
-                <span class="popup-title">${displayName}</span>
-                <button class="weather-btn" onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
-                    <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
-                </button>
-                <br>
-                <div class="like-box" onclick="toggleLike('${loc.id}')">
-                    <i class="fas fa-heart"></i>
-                    <span class="like-count">${loc.likes || 0}</span>
-                    <span style="font-size:12px; margin-left:3px;">${t.popup_like}</span>
-                </div>
-            </div>
-        `;
-        
-        marker.bindPopup(popupContent);
-        marker.on('click', () => { map.flyTo([loc.lat, loc.lng], 14, { duration: 1.5 }); });
-        markerCluster.addLayer(marker);
-    });
-}
-
-// filterCategory 함수 변경: 마지막 부분만 수정
-window.filterCategory = function(category) {
-    markerCluster.clearLayers();
-    const t = translations[currentLang]; 
-
-    const filtered = category === 'all' 
-        ? locations 
-        : locations.filter(loc => loc.category === category);
-
-    filtered.forEach(loc => {
-        var marker = L.marker([loc.lat, loc.lng]);
-        
-        let displayName = loc.name;
-        if (currentLang === 'ja' && loc.name_ja) displayName = loc.name_ja;
-
-        const popupContent = `
-            <div class="popup-content">
-                <span class="popup-title">${displayName}</span>
-                
-                <button class="weather-btn" onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
-                    <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
-                </button>
-                
-                <button class="weather-btn" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); margin-top:5px;" 
-                        onclick="openReviewModal('${loc.id}', '${displayName}')">
-                    <i class="fas fa-pen"></i> 리뷰 쓰기
-                </button>
-                <br>
-
-                <div class="like-box" onclick="toggleLike('${loc.id}')">
-                    <i class="fas fa-heart"></i>
-                    <span class="like-count">${loc.likes || 0}</span>
-                    <span style="font-size:12px; margin-left:3px;">${t.popup_like}</span>
-                </div>
-            </div>
-        `;
-        
-        marker.bindPopup(popupContent);
-        marker.on('click', () => { map.flyTo([loc.lat, loc.lng], 14, { duration: 1.5 }); });
-        markerCluster.addLayer(marker);
-    });
-    
-    updateBtnStyle(category);
-}
-
-// onSnapshot 함수 변경: 초기 로드 시에도 redrawMarkers 사용
-onSnapshot(placesCol, (snapshot) => {
-    locations = []; 
-    snapshot.forEach((doc) => {
-        locations.push({ id: doc.id, ...doc.data() });
-    });
-    
-    const activeBtn = document.querySelector('.filter-btn.active');
-    const currentCategory = activeBtn ? activeBtn.dataset.category : 'all';
-    // filterCategory를 호출하면 내부에서 redrawMarkers를 호출합니다.
-    filterCategory(currentCategory); 
-});
-
-// ==========================================
-// 📝 [추가] 리뷰 모달 기능
-// ==========================================
-let currentReviewPlaceId = null; // 현재 리뷰 쓰는 장소 ID 저장
-
-// 1. 모달 열기
 window.openReviewModal = function(id, name) {
     currentReviewPlaceId = id;
     document.getElementById('modal-place-name').innerText = `Target: ${name}`;
-    document.getElementById('review-text').value = ''; // 입력창 초기화
-    setRating(5); // 별점 초기화
+    document.getElementById('review-text').value = ''; 
+    setRating(5); 
     document.getElementById('review-modal').style.display = 'flex';
 }
 
-// 2. 모달 닫기
 window.closeReviewModal = function() {
     document.getElementById('review-modal').style.display = 'none';
 }
 
-// 3. 별점 선택 기능
 window.setRating = function(score) {
     document.getElementById('review-rating').value = score;
     document.getElementById('rating-value').innerText = score + "점";
     
-    // 별 모양 채우기 (간단한 시각 효과)
     const stars = document.querySelectorAll('.star-rating span');
     stars.forEach((star, index) => {
         if (index < score) star.style.opacity = '1';
@@ -460,7 +327,6 @@ window.setRating = function(score) {
     });
 }
 
-// 4. 리뷰 저장하기 (Firebase)
 window.submitReview = async function() {
     const text = document.getElementById('review-text').value;
     const rating = document.getElementById('review-rating').value;
@@ -468,7 +334,6 @@ window.submitReview = async function() {
     if (!text) { alert("내용을 입력해주세요!"); return; }
 
     try {
-        // 'reviews' 라는 컬렉션에 저장 (누가, 어디에, 뭐라고 썼는지)
         await addDoc(collection(db, "reviews"), {
             placeId: currentReviewPlaceId,
             text: text,
@@ -476,20 +341,14 @@ window.submitReview = async function() {
             createdAt: new Date().toLocaleString()
         });
 
-        alert("리뷰가 등록되었습니다! 감사합니다. 🙇‍♂️");
+        alert("리뷰가 등록되었습니다!");
         closeReviewModal();
-        
     } catch (e) {
         console.error("리뷰 저장 실패:", e);
         alert("오류가 발생했습니다.");
     }
 }
 
-// ==========================================
-// 📖 [추가] 리뷰 읽기 기능
-// ==========================================
-
-// 1. 리뷰 보기 모달 열기 + 데이터 가져오기
 window.openReadReviewModal = async function(placeId) {
     const container = document.getElementById('review-list-container');
     const modal = document.getElementById('read-review-modal');
@@ -498,15 +357,13 @@ window.openReadReviewModal = async function(placeId) {
     container.innerHTML = '<div style="text-align:center; padding:20px;">로딩중... ⌛</div>';
 
     try {
-        // Firebase에서 'placeId'가 일치하는 리뷰만 찾아서, 최신순으로 가져오기
         const q = query(
             collection(db, "reviews"), 
             where("placeId", "==", placeId),
-            orderBy("createdAt", "desc") // 최신순 정렬 (에러나면 이 줄 지우세요)
+            orderBy("createdAt", "desc") 
         );
         
         const querySnapshot = await getDocs(q);
-        
         let html = "";
         
         if (querySnapshot.empty) {
@@ -514,48 +371,40 @@ window.openReadReviewModal = async function(placeId) {
         } else {
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
-                // 별점 ⭐ 문자열 만들기
                 const stars = "⭐".repeat(data.rating);
-                
                 html += `
                     <div class="review-item">
                         <div class="review-header">
                             <span class="review-stars">${stars}</span>
-                            <span>${data.createdAt.split(' ')[0]}</span> </div>
+                            <span>${data.createdAt.split(' ')[0]}</span>
+                        </div>
                         <div class="review-text">${data.text}</div>
                     </div>
                 `;
             });
         }
-        
         container.innerHTML = html;
-
     } catch (e) {
-        console.error("리뷰 불러오기 실패:", e);
-        // 정렬 색인 에러일 경우 대비
-        if(e.message.includes("index")) {
-            alert("관리자: Firebase 콘솔에서 색인(Index)을 만들어야 정렬이 됩니다. 링크를 클릭하세요.");
-        }
+        console.error(e);
+        if(e.message.includes("index")) alert("Firebase 콘솔에서 색인(Index)을 생성해야 합니다.");
         container.innerHTML = "리뷰를 불러오지 못했습니다.";
     }
 }
 
-// 2. 닫기
 window.closeReadReviewModal = function() {
     document.getElementById('read-review-modal').style.display = 'none';
 }
 
-// ==========================================
-// 🚨 [데이터 업로드 도구]
-// ==========================================
+// -----------------------------------------------------------
+// 8. 데이터 업로드 (필요할 때만 주석 풀기)
+// -----------------------------------------------------------
 async function uploadData() {
     const placesCol = collection(db, "places");
-    if (!confirm("정말로 데이터를 업로드 하시겠습니까? (중복 주의)")) return;
-    console.log(`총 ${initialData.length}개의 데이터를 업로드합니다...`);
+    if (!confirm("데이터를 업로드하시겠습니까?")) return;
+    console.log(`총 ${initialData.length}개 업로드 시작...`);
     for (const item of initialData) {
-        try { await addDoc(placesCol, item); console.log(`[성공] ${item.name}`); } 
-        catch (e) { console.error(`[실패] ${item.name}`, e); }
+        try { await addDoc(placesCol, item); } catch (e) { console.error(e); }
     }
-    alert("업로드 끝!");
+    alert("업로드 완료!");
 }
-//uploadData();
+// uploadData();
