@@ -54,7 +54,8 @@ const translations = {
         msg_loading: "로딩중... ⌛",
         score_unit: "점",
         alert_input_empty: "내용을 입력해주세요!",
-        alert_success: "리뷰가 등록되었습니다!"
+        alert_success: "리뷰가 등록되었습니다!",
+        alert_already_reviewed: "이미 이 장소에 리뷰를 작성하셨습니다!"
     },
     ja: {
         placeholder: "どこへ行きますか？",
@@ -82,7 +83,8 @@ const translations = {
         msg_loading: "読み込み中... ⌛",
         score_unit: "点",
         alert_input_empty: "内容を入力してください！",
-        alert_success: "レビューが登録されました！"
+        alert_success: "レビューが登録されました！",
+        alert_already_reviewed: "すでにこの場所のレビューを作成しました！"
     }
 };
 
@@ -421,23 +423,41 @@ window.setRating = function(score) {
     });
 }
 
+// [수정] 리뷰 저장 함수 (1인 1리뷰 제한 기능 추가)
 window.submitReview = async function() {
     const text = document.getElementById('review-text').value;
     const rating = document.getElementById('review-rating').value;
+    
+    // 현재 언어 설정
     const t = translations[currentLang];
 
+    // 1. 내용 비었는지 확인
     if (!text) { 
-        alert(t.alert_input_empty);
+        alert(t.alert_input_empty); 
         return; 
     }
 
+    // ⭐ 2. 이미 썼는지 확인 (내 컴퓨터 기록 조회)
+    // 'myReviewedPlaces'라는 이름으로 내가 쓴 장소 ID들을 저장해둠
+    let myReviews = JSON.parse(localStorage.getItem('myReviewedPlaces')) || [];
+
+    if (myReviews.includes(currentReviewPlaceId)) {
+        alert(t.alert_already_reviewed); // "이미 작성했습니다!"
+        return; // 함수 강제 종료 (저장 안 함)
+    }
+
     try {
+        // 3. Firebase에 저장
         await addDoc(collection(db, "reviews"), {
             placeId: currentReviewPlaceId,
             text: text,
             rating: parseInt(rating),
             createdAt: new Date().toISOString() 
         });
+
+        // 4. 성공했으면 내 컴퓨터에 "나 여기 썼음!" 하고 기록장(localStorage)에 추가
+        myReviews.push(currentReviewPlaceId);
+        localStorage.setItem('myReviewedPlaces', JSON.stringify(myReviews));
 
         alert(t.alert_success);
         closeReviewModal();
