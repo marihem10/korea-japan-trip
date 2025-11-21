@@ -191,24 +191,23 @@ window.toggleLike = async function(docId) {
     }
 }
 
-window.filterCategory = function(category) {
-    markerCluster.clearLayers();
-    const t = translations[currentLang]; 
+// -----------------------------------------------------------
+// [공통 함수] 지도에 핀(마커) 찍기 - 모든 기능 통합
+// -----------------------------------------------------------
+function updateMapMarkers(targetLocations) {
+    markerCluster.clearLayers(); // 기존 핀 지우기
+    const t = translations[currentLang]; // 현재 언어
 
-    const filtered = category === 'all' 
-        ? locations 
-        : locations.filter(loc => loc.category === category);
-
-    filtered.forEach(loc => {
+    targetLocations.forEach(loc => {
         var marker = L.marker([loc.lat, loc.lng]);
         
-        // 일본어 모드면 일본어 이름 보여주기
+        // 언어에 따른 이름 표시
         let displayName = loc.name;
         if (currentLang === 'ja' && loc.name_ja) {
             displayName = loc.name_ja;
         }
 
-        // ⭐ 팝업 내용 만들기 (여기에 버튼이 들어가야 함!)
+        // ⭐ 팝업 내용 (여기에 모든 버튼이 다 들어있음!)
         const popupContent = `
             <div class="popup-content">
                 <span class="popup-title">${displayName}</span>
@@ -241,9 +240,36 @@ window.filterCategory = function(category) {
         marker.on('click', () => { map.flyTo([loc.lat, loc.lng], 14, { duration: 1.5 }); });
         markerCluster.addLayer(marker);
     });
+}
+
+// [수정] 카테고리 버튼 눌렀을 때
+window.filterCategory = function(category) {
+    const filtered = category === 'all' 
+        ? locations 
+        : locations.filter(loc => loc.category === category);
+
+    // 공통 함수 호출 (핀 찍어줘!)
+    updateMapMarkers(filtered);
     
+    // 버튼 색깔 바꾸기
     updateBtnStyle(category);
 }
+
+// [추가] 검색 기능 (검색창에 입력할 때마다 실행)
+document.getElementById('search-input').addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase(); // 입력한 글자 (소문자로 변환)
+
+    // 이름(한국어 or 일본어)에 검색어가 포함된 장소만 찾기
+    const searched = locations.filter(loc => {
+        const koName = loc.name.toLowerCase();
+        const jaName = loc.name_ja ? loc.name_ja.toLowerCase() : "";
+        
+        return koName.includes(searchTerm) || jaName.includes(searchTerm);
+    });
+
+    // 찾은 장소들로 핀 다시 찍기 (공통 함수 사용 -> 리뷰 버튼 나옴!)
+    updateMapMarkers(searched);
+});
 
 function updateBtnStyle(category) {
     const buttons = document.querySelectorAll('.filter-btn');
