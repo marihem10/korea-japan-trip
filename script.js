@@ -190,27 +190,38 @@ onSnapshot(placesCol, (snapshot) => {
 });
 
 window.toggleLike = async function(docId) {
-    // ⭐ 좋아요 누른 순간, 이 장소를 계속 보고 있다고 설정
+    // 1. 클릭하자마자 '현재 보고 있는 장소'로 설정
     selectedPlaceId = docId; 
 
     const docRef = doc(db, "places", docId);
+    
+    // 2. 내 컴퓨터 목록 가져오기
     let myLikes = JSON.parse(localStorage.getItem('myLikedPlaces')) || [];
+    const isLiked = myLikes.includes(docId);
 
+    // ⭐ [핵심] 서버보다 '내 컴퓨터(localStorage)'를 먼저 업데이트해야 함!
+    // 그래야 지도가 다시 그려질 때 빨간색으로 나옴
+    if (isLiked) {
+        // 이미 눌렀으니 취소 (목록에서 제거)
+        myLikes = myLikes.filter(id => id !== docId);
+    } else {
+        // 안 눌렀으니 추가 (목록에 추가)
+        myLikes.push(docId);
+    }
+    // 저장!
+    localStorage.setItem('myLikedPlaces', JSON.stringify(myLikes));
+
+    // 3. 이제 서버에 숫자 변경 요청 (비동기)
     try {
-        if (myLikes.includes(docId)) {
-            await updateDoc(docRef, { likes: increment(-1) });
-            myLikes = myLikes.filter(id => id !== docId);
-            localStorage.setItem('myLikedPlaces', JSON.stringify(myLikes));
+        if (isLiked) {
+            await updateDoc(docRef, { likes: increment(-1) }); // -1
         } else {
-            await updateDoc(docRef, { likes: increment(1) });
-            myLikes.push(docId);
-            localStorage.setItem('myLikedPlaces', JSON.stringify(myLikes));
+            await updateDoc(docRef, { likes: increment(1) });  // +1
         }
-        // (참고: 여기서 화면 갱신은 onSnapshot이 알아서 처리하고, 
-        // updateMapMarkers 안의 로직 덕분에 팝업이 다시 열립니다)
     } catch (e) {
         console.error("좋아요 실패:", e);
         alert("오류가 발생했습니다.");
+        // (실패하면 다시 되돌리는 로직이 있으면 좋지만 해커톤이니 패스)
     }
 }
 
@@ -222,7 +233,7 @@ function updateMapMarkers(targetLocations) {
     markerCluster.clearLayers(); 
     const t = translations[currentLang]; 
     
-    // 내 컴퓨터에 저장된 '좋아요 목록' 가져오기
+    // 1. 내 컴퓨터의 '좋아요 목록'을 꺼내옴 (방금 업데이트된 따끈한 정보)
     const myLikes = JSON.parse(localStorage.getItem('myLikedPlaces')) || [];
 
     targetLocations.forEach(loc => {
@@ -233,9 +244,7 @@ function updateMapMarkers(targetLocations) {
             displayName = loc.name_ja;
         }
 
-        // ⭐ [색상 로직 확인]
-        // 목록에 들어있으면(isLiked) -> 빨간색(#ff4757) + 꽉 찬 하트(fas)
-        // 없으면 -> 회색(#ccc) + 빈 하트(far)
+        // 2. 내 목록에 있으면 빨강, 없으면 회색
         const isLiked = myLikes.includes(loc.id);
         const heartColor = isLiked ? "#ff4757" : "#ccc"; 
         const heartIcon = isLiked ? "fas" : "far"; 
@@ -271,7 +280,6 @@ function updateMapMarkers(targetLocations) {
         
         marker.bindPopup(popupContent);
         
-        // 팝업 유지 로직
         marker.on('click', () => { 
             selectedPlaceId = loc.id; 
             map.flyTo([loc.lat, loc.lng], 14, { duration: 1.5 }); 
@@ -280,7 +288,7 @@ function updateMapMarkers(targetLocations) {
         marker.on('popupclose', () => {
             setTimeout(() => {
                 if (selectedPlaceId === loc.id) {
-                    // 닫힘 감지
+                    // 닫힘 처리
                 }
             }, 100);
         });
