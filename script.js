@@ -2,7 +2,7 @@
 // 1. Firebase 라이브러리 가져오기
 // -----------------------------------------------------------
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
-import { getFirestore, collection, getDocs, doc, updateDoc, increment, onSnapshot, addDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+import { getFirestore, collection, getDocs, doc, updateDoc, increment, onSnapshot, addDoc, query, where, orderBy } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
 import { initialData } from './data.js'; 
 
 // -----------------------------------------------------------
@@ -210,19 +210,32 @@ window.filterCategory = function(category) {
         }
 
         const popupContent = `
-            <div class="popup-content">
-                <span class="popup-title">${displayName}</span>
-                <button class="weather-btn" onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
-                    <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
+        <div class="popup-content">
+            <span class="popup-title">${displayName}</span>
+            
+            <button class="weather-btn" onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
+                <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
+            </button>
+            
+            <div style="display:flex; gap:5px; justify-content:center; margin-top:5px;">
+                <button class="weather-btn" style="background: #FF9966; flex:1;" 
+                        onclick="openReviewModal('${loc.id}', '${displayName}')">
+                    <i class="fas fa-pen"></i> 쓰기
                 </button>
-                <br>
-                <div class="like-box" onclick="toggleLike('${loc.id}')">
-                    <i class="fas fa-heart"></i>
-                    <span class="like-count">${loc.likes || 0}</span>
-                    <span style="font-size:12px; margin-left:3px;">${t.popup_like}</span>
-                </div>
+                <button class="weather-btn" style="background: #6699FF; flex:1;" 
+                        onclick="openReadReviewModal('${loc.id}')">
+                    <i class="fas fa-book"></i> 보기
+                </button>
             </div>
-        `;
+            <br>
+
+            <div class="like-box" onclick="toggleLike('${loc.id}')">
+                <i class="fas fa-heart"></i>
+                <span class="like-count">${loc.likes || 0}</span>
+                <span style="font-size:12px; margin-left:3px;">${t.popup_like}</span>
+            </div>
+        </div>
+    `;
         
         marker.bindPopup(popupContent);
         marker.on('click', () => { map.flyTo([loc.lat, loc.lng], 14, { duration: 1.5 }); });
@@ -333,22 +346,46 @@ function redrawMarkers(data) {
 
 // filterCategory 함수 변경: 마지막 부분만 수정
 window.filterCategory = function(category) {
-    // ... (중략) ...
+    markerCluster.clearLayers();
+    const t = translations[currentLang]; 
+
     const filtered = category === 'all' 
         ? locations 
         : locations.filter(loc => loc.category === category);
 
-    // 검색창의 텍스트가 있다면, 검색어 기준으로 한 번 더 필터링
-    const searchText = document.getElementById('search-input').value.toLowerCase();
-    const finalFiltered = searchText 
-        ? filtered.filter(loc => {
-            const koName = loc.name.toLowerCase();
-            const jaName = loc.name_ja ? loc.name_ja.toLowerCase() : '';
-            return koName.includes(searchText) || jaName.includes(searchText);
-        })
-        : filtered;
+    filtered.forEach(loc => {
+        var marker = L.marker([loc.lat, loc.lng]);
+        
+        let displayName = loc.name;
+        if (currentLang === 'ja' && loc.name_ja) displayName = loc.name_ja;
 
-    redrawMarkers(finalFiltered); // 새로 분리한 함수 호출
+        const popupContent = `
+            <div class="popup-content">
+                <span class="popup-title">${displayName}</span>
+                
+                <button class="weather-btn" onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
+                    <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
+                </button>
+                
+                <button class="weather-btn" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); margin-top:5px;" 
+                        onclick="openReviewModal('${loc.id}', '${displayName}')">
+                    <i class="fas fa-pen"></i> 리뷰 쓰기
+                </button>
+                <br>
+
+                <div class="like-box" onclick="toggleLike('${loc.id}')">
+                    <i class="fas fa-heart"></i>
+                    <span class="like-count">${loc.likes || 0}</span>
+                    <span style="font-size:12px; margin-left:3px;">${t.popup_like}</span>
+                </div>
+            </div>
+        `;
+        
+        marker.bindPopup(popupContent);
+        marker.on('click', () => { map.flyTo([loc.lat, loc.lng], 14, { duration: 1.5 }); });
+        markerCluster.addLayer(marker);
+    });
+    
     updateBtnStyle(category);
 }
 
@@ -364,6 +401,123 @@ onSnapshot(placesCol, (snapshot) => {
     // filterCategory를 호출하면 내부에서 redrawMarkers를 호출합니다.
     filterCategory(currentCategory); 
 });
+
+// ==========================================
+// 📝 [추가] 리뷰 모달 기능
+// ==========================================
+let currentReviewPlaceId = null; // 현재 리뷰 쓰는 장소 ID 저장
+
+// 1. 모달 열기
+window.openReviewModal = function(id, name) {
+    currentReviewPlaceId = id;
+    document.getElementById('modal-place-name').innerText = `Target: ${name}`;
+    document.getElementById('review-text').value = ''; // 입력창 초기화
+    setRating(5); // 별점 초기화
+    document.getElementById('review-modal').style.display = 'flex';
+}
+
+// 2. 모달 닫기
+window.closeReviewModal = function() {
+    document.getElementById('review-modal').style.display = 'none';
+}
+
+// 3. 별점 선택 기능
+window.setRating = function(score) {
+    document.getElementById('review-rating').value = score;
+    document.getElementById('rating-value').innerText = score + "점";
+    
+    // 별 모양 채우기 (간단한 시각 효과)
+    const stars = document.querySelectorAll('.star-rating span');
+    stars.forEach((star, index) => {
+        if (index < score) star.style.opacity = '1';
+        else star.style.opacity = '0.3';
+    });
+}
+
+// 4. 리뷰 저장하기 (Firebase)
+window.submitReview = async function() {
+    const text = document.getElementById('review-text').value;
+    const rating = document.getElementById('review-rating').value;
+
+    if (!text) { alert("내용을 입력해주세요!"); return; }
+
+    try {
+        // 'reviews' 라는 컬렉션에 저장 (누가, 어디에, 뭐라고 썼는지)
+        await addDoc(collection(db, "reviews"), {
+            placeId: currentReviewPlaceId,
+            text: text,
+            rating: parseInt(rating),
+            createdAt: new Date().toLocaleString()
+        });
+
+        alert("리뷰가 등록되었습니다! 감사합니다. 🙇‍♂️");
+        closeReviewModal();
+        
+    } catch (e) {
+        console.error("리뷰 저장 실패:", e);
+        alert("오류가 발생했습니다.");
+    }
+}
+
+// ==========================================
+// 📖 [추가] 리뷰 읽기 기능
+// ==========================================
+
+// 1. 리뷰 보기 모달 열기 + 데이터 가져오기
+window.openReadReviewModal = async function(placeId) {
+    const container = document.getElementById('review-list-container');
+    const modal = document.getElementById('read-review-modal');
+    
+    modal.style.display = 'flex';
+    container.innerHTML = '<div style="text-align:center; padding:20px;">로딩중... ⌛</div>';
+
+    try {
+        // Firebase에서 'placeId'가 일치하는 리뷰만 찾아서, 최신순으로 가져오기
+        const q = query(
+            collection(db, "reviews"), 
+            where("placeId", "==", placeId),
+            orderBy("createdAt", "desc") // 최신순 정렬 (에러나면 이 줄 지우세요)
+        );
+        
+        const querySnapshot = await getDocs(q);
+        
+        let html = "";
+        
+        if (querySnapshot.empty) {
+            html = '<div style="text-align:center; padding:40px; color:#999;">아직 작성된 리뷰가 없어요.<br>첫 번째 리뷰를 남겨보세요! ✍️</div>';
+        } else {
+            querySnapshot.forEach((doc) => {
+                const data = doc.data();
+                // 별점 ⭐ 문자열 만들기
+                const stars = "⭐".repeat(data.rating);
+                
+                html += `
+                    <div class="review-item">
+                        <div class="review-header">
+                            <span class="review-stars">${stars}</span>
+                            <span>${data.createdAt.split(' ')[0]}</span> </div>
+                        <div class="review-text">${data.text}</div>
+                    </div>
+                `;
+            });
+        }
+        
+        container.innerHTML = html;
+
+    } catch (e) {
+        console.error("리뷰 불러오기 실패:", e);
+        // 정렬 색인 에러일 경우 대비
+        if(e.message.includes("index")) {
+            alert("관리자: Firebase 콘솔에서 색인(Index)을 만들어야 정렬이 됩니다. 링크를 클릭하세요.");
+        }
+        container.innerHTML = "리뷰를 불러오지 못했습니다.";
+    }
+}
+
+// 2. 닫기
+window.closeReadReviewModal = function() {
+    document.getElementById('read-review-modal').style.display = 'none';
+}
 
 // ==========================================
 // 🚨 [데이터 업로드 도구]
