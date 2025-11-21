@@ -188,11 +188,33 @@ onSnapshot(placesCol, (snapshot) => {
 
 window.toggleLike = async function(docId) {
     const docRef = doc(db, "places", docId);
+    
+    // 1. 내 브라우저에 저장된 '좋아요 목록' 가져오기
+    let myLikes = JSON.parse(localStorage.getItem('myLikedPlaces')) || [];
+
     try {
-        await updateDoc(docRef, { likes: increment(1) });
-        console.log("좋아요 성공!");
+        if (myLikes.includes(docId)) {
+            // 💔 이미 눌렀다면? -> 취소하기 (숫자 -1)
+            await updateDoc(docRef, { likes: increment(-1) });
+            
+            // 목록에서 제거
+            myLikes = myLikes.filter(id => id !== docId);
+            localStorage.setItem('myLikedPlaces', JSON.stringify(myLikes));
+            
+            console.log("좋아요 취소");
+        } else {
+            // ❤️ 안 눌렀다면? -> 좋아요 (숫자 +1)
+            await updateDoc(docRef, { likes: increment(1) });
+            
+            // 목록에 추가
+            myLikes.push(docId);
+            localStorage.setItem('myLikedPlaces', JSON.stringify(myLikes));
+            
+            console.log("좋아요 성공");
+        }
     } catch (e) {
         console.error("좋아요 실패:", e);
+        alert("오류가 발생했습니다.");
     }
 }
 
@@ -202,6 +224,9 @@ window.toggleLike = async function(docId) {
 function updateMapMarkers(targetLocations) {
     markerCluster.clearLayers(); 
     const t = translations[currentLang]; 
+    
+    // ⭐ 내 브라우저에 저장된 '좋아요 목록' 미리 가져오기
+    const myLikes = JSON.parse(localStorage.getItem('myLikedPlaces')) || [];
 
     targetLocations.forEach(loc => {
         var marker = L.marker([loc.lat, loc.lng]);
@@ -210,6 +235,10 @@ function updateMapMarkers(targetLocations) {
         if (currentLang === 'ja' && loc.name_ja) {
             displayName = loc.name_ja;
         }
+
+        // ⭐ 내가 좋아요 누른 곳이면 빨간색(#ff4757), 아니면 회색(#ccc)
+        const isLiked = myLikes.includes(loc.id);
+        const heartColor = isLiked ? "#ff4757" : "#ccc"; 
 
         const popupContent = `
             <div class="popup-content">
@@ -231,9 +260,9 @@ function updateMapMarkers(targetLocations) {
                 </div>
                 
                 <div class="like-box" style="margin-top: 8px;" onclick="toggleLike('${loc.id}')">
-                    <i class="fas fa-heart"></i>
-                    <span class="like-count">${loc.likes || 0}</span>
-                    <span style="font-size:12px; margin-left:3px;">${t.popup_like}</span>
+                    <i class="fas fa-heart" style="color: ${heartColor}; transition: color 0.3s;"></i>
+                    <span class="like-count" style="color: ${heartColor};">${loc.likes || 0}</span>
+                    <span style="font-size:12px; margin-left:3px; color:#555;">${t.popup_like}</span>
                 </div>
             </div>
         `;
