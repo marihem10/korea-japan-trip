@@ -42,7 +42,10 @@ const translations = {
         w_cool: "쌀쌀해요! 겉옷 챙기세요 🧥",
         w_cold: "너무 추워요! 패딩 필수 🧣",
         popup_weather: "날씨 확인",
-        popup_like: "좋아요"
+        popup_like: "좋아요",
+        
+        review_write: "리뷰 쓰기",
+        review_read: "리뷰 보기"
     },
     ja: {
         placeholder: "どこへ行きますか？",
@@ -58,7 +61,10 @@ const translations = {
         w_cool: "肌寒いです！上着が必要 🧥",
         w_cold: "寒いです！ダウン必須 🧣",
         popup_weather: "天気予報",
-        popup_like: "いいね"
+        popup_like: "いいね",
+
+        review_write: "レビューを書く",
+        review_read: "レビューを見る"
     }
 };
 
@@ -214,18 +220,17 @@ function updateMapMarkers(targetLocations) {
                 </button>
                 
                 <div style="display:flex; gap:5px; justify-content:center; margin-top:5px;">
-                    <button class="weather-btn" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); flex:1; padding:6px 10px;" 
+                    <button class="weather-btn" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); flex:1; padding:6px 5px; font-size:11px;" 
                             onclick="openReviewModal('${loc.id}', '${displayName}')">
-                        <i class="fas fa-pen"></i> 쓰기
+                        <i class="fas fa-pen"></i> ${t.review_write}
                     </button>
-                    <button class="weather-btn" style="background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%); flex:1; padding:6px 10px;" 
+                    <button class="weather-btn" style="background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%); flex:1; padding:6px 5px; font-size:11px;" 
                             onclick="openReadReviewModal('${loc.id}')">
-                        <i class="fas fa-book"></i> 보기
+                        <i class="fas fa-book"></i> ${t.review_read}
                     </button>
                 </div>
-                <br>
-
-                <div class="like-box" onclick="toggleLike('${loc.id}')">
+                
+                <div class="like-box" style="margin-top: 8px;" onclick="toggleLike('${loc.id}')">
                     <i class="fas fa-heart"></i>
                     <span class="like-count">${loc.likes || 0}</span>
                     <span style="font-size:12px; margin-left:3px;">${t.popup_like}</span>
@@ -338,7 +343,8 @@ window.submitReview = async function() {
             placeId: currentReviewPlaceId,
             text: text,
             rating: parseInt(rating),
-            createdAt: new Date().toLocaleString()
+            // ⭐ [수정됨] 시/분/초 빼고 "2025. 11. 21." 형태로만 저장!
+            createdAt: new Date().toLocaleDateString() 
         });
 
         alert("리뷰가 등록되었습니다!");
@@ -372,11 +378,12 @@ window.openReadReviewModal = async function(placeId) {
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
                 const stars = "⭐".repeat(data.rating);
+                
                 html += `
                     <div class="review-item">
                         <div class="review-header">
                             <span class="review-stars">${stars}</span>
-                            <span>${data.createdAt.split(' ')[0]}</span>
+                            <span>${data.createdAt}</span> 
                         </div>
                         <div class="review-text">${data.text}</div>
                     </div>
