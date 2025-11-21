@@ -427,7 +427,7 @@ window.submitReview = async function() {
     const t = translations[currentLang];
 
     if (!text) { 
-        alert(t.alert_input_empty); // "내용을 입력해주세요" or "内容を入力..."
+        alert(t.alert_input_empty);
         return; 
     }
 
@@ -439,7 +439,7 @@ window.submitReview = async function() {
             createdAt: new Date().toISOString() 
         });
 
-        alert(t.alert_success); // "리뷰가 등록되었습니다" or "レビューが登録..."
+        alert(t.alert_success);
         closeReviewModal();
     } catch (e) {
         console.error("리뷰 저장 실패:", e);
