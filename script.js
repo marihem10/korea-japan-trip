@@ -30,7 +30,7 @@ let currentLang = 'ko'; // 기본 언어
 const translations = {
     ko: {
         placeholder: "어디로 떠나볼까요?",
-        all: "전체", food: "🍜 맛집", view: "🏰 관광", culture: "💛 문화", station: "🚇 교통",
+        all: "전체", food: "🍜 맛집", view: "🏰 관광", culture: "🏛️ 유적", station: "🚇 교통",
 
         exchangeTitle: "🇯🇵 JPY 100 ➔ 🇰🇷 KRW",
         starbucks: "스벅 라떼가 한국보다",
@@ -45,11 +45,17 @@ const translations = {
         popup_weather: "날씨 확인",
         popup_like: "좋아요",
         review_write: "리뷰 쓰기",
-        review_read: "리뷰 보기"
+        review_read: "리뷰 보기",
+        modal_write_title: "📝 리뷰 쓰기",
+        modal_read_title: "📋 여행자 생생 리뷰",
+        placeholder_review: "이곳의 후기를 남겨주세요! (예: 야경이 정말 예뻐요)",
+        btn_submit: "등록하기",
+        no_reviews: "아직 작성된 리뷰가 없어요.<br>첫 번째 리뷰를 남겨보세요! ✍️",
+        msg_loading: "로딩중... ⌛"
     },
     ja: {
         placeholder: "どこへ行きますか？",
-        all: "すべて", food: "🍜 グルメ", view: "🏰 観光", culture: "💛 文化", station: "🚇 交通",
+        all: "すべて", food: "🍜 グルメ", view: "🏰 観光", culture: "🏛️ 遺跡", station: "🚇 交通",
 
         exchangeTitle: "🇰🇷 KRW 1000 ➔ 🇯🇵 JPY",
         starbucks: "スタバのラテが日本より",
@@ -64,7 +70,13 @@ const translations = {
         popup_weather: "天気予報",
         popup_like: "いいね",
         review_write: "レビューを書く",
-        review_read: "レビューを見る"
+        review_read: "レビューを見る",
+        modal_write_title: "📝 レビューを書く",
+        modal_read_title: "📋 旅行者のリアルな口コミ",
+        placeholder_review: "ここに感想を残してください！ (例: 夜景がとても綺麗です)",
+        btn_submit: "登録する",
+        no_reviews: "まだレビューがありません。<br>最初のレビューを投稿しましょう！ ✍️",
+        msg_loading: "読み込み中... ⌛"
     }
 };
 
@@ -338,8 +350,17 @@ function updateBtnStyle(category) {
 // 6. 언어 전환 함수
 // -----------------------------------------------------------
 window.toggleLanguage = function() {
+    // 언어 변경
     currentLang = currentLang === 'ko' ? 'ja' : 'ko';
-    document.getElementById('lang-icon').innerText = currentLang === 'ko' ? "🇰🇷" : "🇯🇵";
+    
+    // ⭐ [디자인 변경 로직 추가]
+    if (currentLang === 'ko') {
+        document.getElementById('lang-ko').classList.add('active');
+        document.getElementById('lang-ja').classList.remove('active');
+    } else {
+        document.getElementById('lang-ko').classList.remove('active');
+        document.getElementById('lang-ja').classList.add('active');
+    }
     const t = translations[currentLang];
     
     // 기존 텍스트 변경
@@ -352,6 +373,10 @@ window.toggleLanguage = function() {
     document.getElementById('exchange-title').innerText = t.exchangeTitle;
     document.getElementById('city-name').innerText = t.cityNeed; 
     document.querySelector('.weather-desc').innerText = t.weatherDesc;
+    document.getElementById('modal-write-title').innerText = t.modal_write_title;
+    document.getElementById('modal-read-title').innerText = t.modal_read_title;
+    document.getElementById('review-text').placeholder = t.placeholder_review;
+    document.getElementById('btn-submit').innerText = t.btn_submit;
     
     fetchExchangeRate(); 
 
@@ -399,8 +424,7 @@ window.submitReview = async function() {
             placeId: currentReviewPlaceId,
             text: text,
             rating: parseInt(rating),
-            // ⭐ [수정됨] 시/분/초 빼고 "2025. 11. 21." 형태로만 저장!
-            createdAt: new Date().toLocaleDateString() 
+            createdAt: new Date().toISOString() 
         });
 
         alert("리뷰가 등록되었습니다!");
@@ -415,8 +439,10 @@ window.openReadReviewModal = async function(placeId) {
     const container = document.getElementById('review-list-container');
     const modal = document.getElementById('read-review-modal');
     
+    const t = translations[currentLang]; 
+    
     modal.style.display = 'flex';
-    container.innerHTML = '<div style="text-align:center; padding:20px;">로딩중... ⌛</div>';
+    container.innerHTML = `<div style="text-align:center; padding:20px; color:#999;">${t.msg_loading}</div>`;
 
     try {
         const q = query(
@@ -429,17 +455,32 @@ window.openReadReviewModal = async function(placeId) {
         let html = "";
         
         if (querySnapshot.empty) {
-            html = '<div style="text-align:center; padding:40px; color:#999;">아직 작성된 리뷰가 없어요.<br>첫 번째 리뷰를 남겨보세요! ✍️</div>';
+            html = `<div style="text-align:center; padding:40px; color:#999; line-height:1.6;">${t.no_reviews}</div>`;
         } else {
             querySnapshot.forEach((doc) => {
                 const data = doc.data();
                 const stars = "⭐".repeat(data.rating);
                 
+                // ⭐ [수정됨] 날짜 변환 로직 (시간까지 포함!)
+                let dateStr = data.createdAt;
+                
+                const dateObj = new Date(data.createdAt);
+                if (!isNaN(dateObj.getTime())) { // 유효한 날짜인지 확인
+                    // 'DateString' -> 'String'으로 변경 (시간 포함됨)
+                    if (currentLang === 'ko') {
+                        // 🇰🇷 한국어: 2025. 11. 21. 오후 2:30:00
+                        dateStr = dateObj.toLocaleString('ko-KR');
+                    } else {
+                        // 🇯🇵 일본어: 2025/11/21 14:30:00
+                        dateStr = dateObj.toLocaleString('ja-JP');
+                    }
+                }
+
                 html += `
                     <div class="review-item">
                         <div class="review-header">
                             <span class="review-stars">${stars}</span>
-                            <span>${data.createdAt}</span> 
+                            <span style="color:#aaa; font-size:11px;">${dateStr}</span> 
                         </div>
                         <div class="review-text">${data.text}</div>
                     </div>
@@ -450,7 +491,7 @@ window.openReadReviewModal = async function(placeId) {
     } catch (e) {
         console.error(e);
         if(e.message.includes("index")) alert("Firebase 콘솔에서 색인(Index)을 생성해야 합니다.");
-        container.innerHTML = "리뷰를 불러오지 못했습니다.";
+        container.innerHTML = "Error.";
     }
 }
 
