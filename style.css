@@ -432,38 +432,38 @@ textarea {
 /* ================================================= */
 @media (max-width: 600px) {
     
-    /* 1. 언어 버튼 */
+    /* 1. 언어 버튼: 더 위로, 더 왼쪽으로 바짝 붙임 */
     .lang-switch-container {
-        top: 15px;
-        left: 15px;
-        transform: scale(0.9); 
+        top: 10px;  /* 15px -> 10px */
+        left: 10px; /* 15px -> 10px */
+        transform: scale(0.85); /* 크기도 살짝 더 줄여서 공간 확보 */
         transform-origin: top left;
         z-index: 2000;
     }
 
-    /* 2. 검색바: 기준점 (width: 92%) */
+    /* 2. 검색바: 언어 버튼 바로 아래로 바짝 당김 */
     .search-bar {
-        top: 70px; 
-        width: 92%; /* ⭐ 기준 너비 */
-        padding: 12px 20px; 
+        top: 55px;  /* 70px -> 55px (간격 확 줄임) */
+        width: 94%; 
+        padding: 10px 15px; /* 두께 살짝 줄여서 날렵하게 */
         font-size: 14px;
         border-radius: 25px;
         z-index: 2000;
     }
 
-    /* 3. 필터 버튼: 검색바와 너비 100% 일치시킴 */
+    /* 3. 필터 버튼: 검색바 바로 아래로 + ⭐ 중앙 정렬 */
     .filter-bar {
-        top: 135px; 
-        width: 92%; /* ⭐ [수정] 검색창과 똑같은 92%로 변경 */
+        top: 105px; /* 135px -> 105px (검색바 바로 밑) */
+        width: 96%;
         left: 50%;
-        transform: translateX(-50%); /* 정중앙 배치 */
-        padding: 5px 0 5px 5px; /* ⭐ 오른쪽 여백 확보 */
+        transform: translateX(-50%); 
+        padding: 5px 0;
         
         display: flex;
-        justify-content: flex-start; 
+        justify-content: center; /* ⭐ [핵심] 버튼들을 가운데로 모음! */
         flex-wrap: nowrap !important; 
         overflow-x: auto; 
-        gap: 8px;
+        gap: 6px; /* 버튼 사이 간격 살짝 좁힘 */
         
         -ms-overflow-style: none; 
         scrollbar-width: none;
@@ -475,42 +475,40 @@ textarea {
         flex: 0 0 auto;
         white-space: nowrap;
         font-size: 13px; 
-        padding: 8px 16px; /* 높이 살짝 줄여서 밸런스 맞춤 */
-        border-radius: 25px; 
-        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
-    }
-    /* 마지막 버튼 잘림 방지용 여백 */
-    .filter-btn:last-child {
-        margin-right: 10px;
+        padding: 8px 14px; /* 버튼 크기 적당하게 */
+        border-radius: 20px; 
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
-    /* 4. 환율 위젯: 날씨 위젯쪽으로 더 내림 (간격 축소) */
+    /* 4. 환율 위젯: 바닥에 붙임 */
     .exchange-widget {
         top: auto !important; 
-        bottom: 125px !important; /* ⭐ [수정] 140px -> 125px (더 아래로) */
-        left: 15px !important;
+        bottom: 120px !important; /* 위치 살짝 조정 */
+        left: 10px !important;
         right: auto !important;
         
         min-width: auto;
-        padding: 10px 15px;
-        transform: scale(0.95);
+        padding: 8px 12px;
+        transform: scale(0.9);
         transform-origin: bottom left;
         z-index: 2000;
     }
     .exchange-desc { display: none; } 
     
-    /* 5. 날씨 위젯 */
+    /* 5. 날씨 위젯: 환율 아래에 붙임 */
     .weather-widget {
         top: auto !important;
-        bottom: 30px !important; 
-        left: 15px !important;
+        bottom: 25px !important; 
+        left: 10px !important;
         right: auto !important;
         
         min-width: auto;
-        padding: 12px 18px;
-        transform: scale(0.95);
+        padding: 10px 15px;
+        transform: scale(0.9);
         transform-origin: bottom left;
         z-index: 2000;
     }
-    .weather-temp { font-size: 24px; }
+    .weather-temp { font-size: 22px; }
+    .weather-header { font-size: 12px; }
+    .weather-desc { font-size: 10px; }
 }
