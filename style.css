@@ -514,7 +514,7 @@ textarea {
 }
 
 body.is-jp .filter-bar {
-        width: 98%; /* 85% -> 95%로 꽉 차게 늘림 */
+        width: 90%; /* 85% -> 95%로 꽉 차게 늘림 */
         padding-left: 2px; 
         padding-right: 2px;
     }
