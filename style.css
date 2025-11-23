@@ -1,3 +1,23 @@
+/* [추가] 브라우저 기본 스타일 초기화 (크롬, 삼성인터넷 통일용) */
+* {
+    -webkit-text-size-adjust: 100%; /* 모바일 폰트 자동 확대 방지 */
+    -ms-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+    box-sizing: border-box; /* 패딩 포함 크기 계산 */
+}
+
+body, button, input, select, textarea {
+    font-family: 'Noto Sans KR', sans-serif; /* 폰트 강제 통일 */
+    line-height: 1.5; /* 줄 간격 통일 */
+}
+
+/* 아이폰(Safari) 버튼 스타일 초기화 */
+button {
+    -webkit-appearance: none;
+    -moz-appearance: none;
+    appearance: none;
+}
+
 /* 기본 초기화 */
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Noto Sans KR', sans-serif; }
 body { overflow: hidden; }
