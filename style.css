@@ -426,3 +426,78 @@ textarea {
     font-size: 14px;
     line-height: 24px; 
 }
+
+/* ================================================= */
+/* 📱 모바일 화면 최적화 (화면 너비 600px 이하일 때) */
+/* ================================================= */
+@media (max-width: 600px) {
+    
+    /* 1. 언어 버튼: 왼쪽 위 고정 (약간 축소) */
+    .lang-switch-container {
+        top: 15px;
+        left: 15px;
+        transform: scale(0.9); /* 90% 크기로 축소 */
+        transform-origin: top left;
+    }
+
+    /* 2. 환율 위젯: 오른쪽 위 고정 (공간 확보를 위해 내용 간소화) */
+    .exchange-widget {
+        top: 15px;
+        right: 15px;
+        min-width: auto;
+        padding: 10px;
+        transform: scale(0.9);
+        transform-origin: top right;
+    }
+    .exchange-title { font-size: 11px; margin-bottom: 2px; }
+    .exchange-rate { font-size: 16px; }
+    /* 모바일에서는 공간이 좁으니 '스벅라떼' 같은 긴 설명은 숨기거나 작게 처리 */
+    .exchange-desc { display: none; } 
+    .exchange-diff { font-size: 11px; margin-top: 2px; }
+
+    /* 3. 검색바: 위젯들 아래로 내리고, 가로로 꽉 채우기 */
+    .search-bar {
+        top: 85px; /* 위젯 피해 아래로 */
+        width: 92%; /* 화면 꽉 차게 */
+        padding: 8px 15px;
+    }
+    .search-bar input { font-size: 14px; }
+
+    /* 4. 필터 버튼: 검색바 아래로 + ⭐ 옆으로 스크롤(Swipe) 가능하게 변경 */
+    .filter-bar {
+        top: 140px;
+        width: 100%;
+        padding: 0 15px;
+        justify-content: flex-start; /* 왼쪽 정렬 */
+        flex-wrap: nowrap !important; /* 줄바꿈 금지 (한 줄로 쭉) */
+        overflow-x: auto; /* 가로 스크롤 허용 */
+        gap: 8px;
+        
+        /* 스크롤바 숨기기 (깔끔하게) */
+        -ms-overflow-style: none; 
+        scrollbar-width: none; 
+    }
+    .filter-bar::-webkit-scrollbar { display: none; }
+
+    .filter-btn {
+        white-space: nowrap; /* 글자 줄바꿈 방지 */
+        font-size: 12px;
+        padding: 6px 14px;
+        flex-shrink: 0; /* 버튼 찌그러짐 방지 */
+    }
+
+    /* 5. 날씨 위젯: 상단이 복잡하니 '왼쪽 아래'로 이사 */
+    .weather-widget {
+        top: auto; /* 상단 위치 해제 */
+        bottom: 25px; /* 하단 배치 */
+        left: 15px;
+        right: auto;
+        min-width: auto;
+        padding: 10px 15px;
+        transform: scale(0.9);
+        transform-origin: bottom left;
+    }
+    .weather-temp { font-size: 22px; }
+    .weather-header { font-size: 12px; }
+    .weather-desc { font-size: 10px; }
+}
