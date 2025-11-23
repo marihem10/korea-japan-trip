@@ -485,9 +485,13 @@ textarea {
         flex: 0 0 auto;
         white-space: nowrap;
         font-size: 13px; 
-        padding: 8px 16px;
+        height: 36px; 
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0 16px;
         border-radius: 25px; 
-        box-shadow: none; /* 겉 박스에 그림자가 있으니 버튼 그림자는 빼서 깔끔하게 */
+        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
     /* 4. 환율 위젯 */
