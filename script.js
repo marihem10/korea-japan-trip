@@ -55,7 +55,8 @@ const translations = {
         score_unit: "점",
         alert_input_empty: "내용을 입력해주세요!",
         alert_success: "리뷰가 등록되었습니다!",
-        alert_already_reviewed: "이미 이 장소에 리뷰를 작성하셨습니다!"
+        alert_already_reviewed: "이미 이 장소에 리뷰를 작성하셨습니다!",
+        placeholder_nickname: "닉네임"
     },
     ja: {
         placeholder: "どこへ行きますか？",
@@ -84,7 +85,8 @@ const translations = {
         score_unit: "点",
         alert_input_empty: "内容を入力してください！",
         alert_success: "レビューが登録されました！",
-        alert_already_reviewed: "すでにこの場所のレビューを作成しました！"
+        alert_already_reviewed: "すでにこの場所のレビューを作成しました！",
+        placeholder_nickname: "ニックネーム"
     }
 };
 
@@ -537,6 +539,7 @@ window.toggleLanguage = function() {
     
     const currentScore = document.getElementById('review-rating').value;
     document.getElementById('rating-value').innerText = currentScore + t.score_unit;
+    document.getElementById('review-nickname').placeholder = t.placeholder_nickname;
     
     fetchExchangeRate(); 
 
@@ -554,7 +557,9 @@ window.openReviewModal = function(id, name) {
     currentReviewPlaceId = id;
     document.getElementById('modal-place-name').innerText = `Target: ${name}`;
     document.getElementById('review-text').value = ''; 
-    setRating(5); 
+    document.getElementById('review-nickname').value = ''; // ⭐ [추가] 닉네임 초기화
+    
+    setRating(0); 
     document.getElementById('review-modal').style.display = 'flex';
 }
 
@@ -577,31 +582,34 @@ window.setRating = function(score) {
 
 // 리뷰 저장 함수
 window.submitReview = async function() {
+    const nickname = document.getElementById('review-nickname').value; // ⭐ 닉네임 가져오기
     const text = document.getElementById('review-text').value;
     const rating = document.getElementById('review-rating').value;
     const t = translations[currentLang];
 
-    if (!text) { 
-        alert(t.alert_input_empty); 
-        return; 
+    // ⭐ [추가] 닉네임 입력 확인
+    if (!nickname) {
+        alert(currentLang === 'ko' ? "닉네임을 입력해주세요!" : "ニックネームを入力してください！");
+        return;
     }
+
+    if (!text) { alert(t.alert_input_empty); return; }
 
     let myReviews = JSON.parse(localStorage.getItem('myReviewedPlaces')) || [];
     if (myReviews.includes(currentReviewPlaceId)) {
-        alert(t.alert_already_reviewed); 
-        return; 
+        alert(t.alert_already_reviewed); return; 
     }
 
     try {
-        // ⭐ [핵심] 현재 언어 설정에 따라 국적 결정 (ko -> KR, ja -> JP)
         const userCountry = currentLang === 'ko' ? 'KR' : 'JP';
 
         await addDoc(collection(db, "reviews"), {
             placeId: currentReviewPlaceId,
+            nickname: nickname, // ⭐ 닉네임 저장!
             text: text,
             rating: parseInt(rating),
             createdAt: new Date().toISOString(),
-            country: userCountry // ⭐ 국기 데이터 추가!
+            country: userCountry
         });
 
         myReviews.push(currentReviewPlaceId);
@@ -648,30 +656,38 @@ window.openReadReviewModal = async function(placeId) {
                     else dateStr = dateObj.toLocaleString('ja-JP');
                 }
 
-                // ⭐ [핵심] 국기 아이콘 결정
-                // 데이터에 country가 있으면 그 나라 국기, 없으면(옛날 글) 지구본(🌏)
-                let flagIcon = "🌏"; 
-                if (data.country === 'KR') flagIcon = "🇰🇷";
-                else if (data.country === 'JP') flagIcon = "🇯🇵";
+                // 국적 뱃지
+                let userBadge = "";
+                if (data.country === 'KR') {
+                    userBadge = `<span style="color:#0047A0; font-weight:bold; font-size:12px; margin-right:5px; background:#eef6ff; padding:2px 6px; border-radius:4px;">🇰🇷</span>`;
+                } else if (data.country === 'JP') {
+                    userBadge = `<span style="color:#BC002D; font-weight:bold; font-size:12px; margin-right:5px; background:#fff0f0; padding:2px 6px; border-radius:4px;">🇯🇵</span>`;
+                } else {
+                    userBadge = `<span style="color:#555; font-weight:bold; font-size:12px; margin-right:5px; background:#eee; padding:2px 6px; border-radius:4px;">🌏</span>`;
+                }
+
+                // ⭐ [추가] 닉네임 없으면 '익명' 처리
+                const nicknameDisplay = data.nickname ? `<span style="font-weight:bold; font-size:13px; color:#333; margin-right:5px;">${data.nickname}</span>` : `<span style="color:#999; font-size:12px; margin-right:5px;">(익명)</span>`;
 
                 const safeText = data.text.replace(/"/g, '&quot;').replace(/'/g, "&#39;");
                 const btnText = currentLang === 'ko' ? "🤖 번역" : "🤖 翻訳";
 
                 html += `
                     <div class="review-item">
-                        <div class="review-header">
-                            <div>
-                                <span style="font-size:16px; margin-right:4px;">${flagIcon}</span> <span class="review-stars">${stars}</span>
+                        <div class="review-header" style="align-items: center; margin-bottom: 8px;">
+                            <div style="display: flex; align-items: center;">
+                                ${userBadge}
+                                ${nicknameDisplay} <span class="review-stars" style="font-size:12px;">${stars}</span>
                             </div>
                             <span style="color:#aaa; font-size:11px;">${dateStr}</span> 
                         </div>
-                        <div class="review-text" id="review-text-${doc.id}" style="margin-bottom: 5px;">${data.text}</div>
+                        <div class="review-text" id="review-text-${doc.id}" style="margin-bottom: 8px;">${data.text}</div>
                         
-                        <div id="trans-result-${doc.id}" style="font-size:13px; color:#4facfe; margin-bottom:5px; display:none;"></div>
+                        <div id="trans-result-${doc.id}" style="font-size:13px; color:#4facfe; margin-bottom:5px; display:none; background:#f0f8ff; padding:8px; border-radius:8px;"></div>
 
                         <button onclick="translateReview('${doc.id}', '${safeText}')" 
-                        style="font-size:11px; background:none; border:1px solid #ccc; border-radius:12px; padding:2px 8px; cursor:pointer; color:#555;">
-                        ${btnText}
+                        style="font-size:11px; background:white; border:1px solid #ddd; border-radius:12px; padding:4px 10px; cursor:pointer; color:#555; display:flex; align-items:center; gap:4px;">
+                            ${btnText}
                         </button>
                     </div>
                 `;

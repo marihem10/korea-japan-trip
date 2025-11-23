@@ -65,9 +65,12 @@
                 <span onclick="setRating(3)">⭐</span>
                 <span onclick="setRating(4)">⭐</span>
                 <span onclick="setRating(5)">⭐</span>
-                <input type="hidden" id="review-rating" value="5">
-                <span id="rating-value" style="font-weight:bold; margin-left:5px;">5점</span>
+                <input type="hidden" id="review-rating" value="0">
+                <span id="rating-value" style="font-weight:bold; margin-left:5px;">0점</span>
             </div>
+
+            <input type="text" id="review-nickname" placeholder="닉네임 (Nickname)" maxlength="10" 
+                   style="width: 100%; padding: 10px; margin-bottom: 10px; margin-top: 10px; border: 1px solid #ddd; border-radius: 8px;">
 
             <textarea id="review-text" placeholder="이곳의 후기를 남겨주세요! (예: 야경이 정말 예뻐요)"></textarea>
             
