@@ -99,9 +99,46 @@ L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
 var markerCluster = L.markerClusterGroup({
-    maxClusterRadius: 30,      
-    disableClusteringAtZoom: 11 
+    maxClusterRadius: 50,      // 마커를 묶는 최대 반경 (50px)
+    disableClusteringAtZoom: 13, // 클러스터링 해제 Zoom Level (13)
+    
+    // ⭐ [핵심 수정] 클러스터 아이콘 생성 함수 정의
+    iconCreateFunction: function(cluster) {
+        var count = cluster.getChildCount(); // 클러스터 내부 마커 개수
+        var className = 'marker-cluster'; // 라이브러리 기본 클래스
+        var colorClass = ''; // 색상을 결정하는 클래스
+
+        // 1. 크기(외형)를 결정하는 기본 클래스 적용 (Leaflet.markercluster의 기본 디자인 유지)
+        if (count < 10) {
+            className += ' marker-cluster-small';
+        } else if (count < 100) {
+            className += ' marker-cluster-medium';
+        } else {
+            className += ' marker-cluster-large';
+        }
+
+        // 2. ⭐ 요청하신 개수에 따른 색상 클래스 적용
+        if (count <= 10) {
+            colorClass = ' mc-green'; // mc-green 클래스 추가
+        } else if (count <= 30) {
+            colorClass = ' mc-yellow'; // mc-yellow 클래스 추가
+        } else if (count <= 50) {
+            colorClass = ' mc-orange'; // mc-orange 클래스 추가
+        } else {
+            colorClass = ' mc-red'; // mc-red 클래스 추가
+        }
+        
+        // 최종 클래스 조합: Leaflet 기본 디자인 + 커스텀 색상
+        className += colorClass;
+
+        return L.divIcon({ 
+            html: '<div><span>' + count + '</span></div>', 
+            className: className, 
+            iconSize: new L.Point(40, 40) // Leaflet 기본값 유지
+        });
+    }
 });
+map.addLayer(markerCluster);
 map.addLayer(markerCluster);
 
 // ⭐ 현재 열려있는 팝업(장소)의 ID를 기억하는 변수
@@ -198,15 +235,30 @@ var locations = [];
 const placesCol = collection(db, "places");
 
 onSnapshot(placesCol, (snapshot) => {
-    locations = []; 
-    snapshot.forEach((doc) => {
-        locations.push({ id: doc.id, ...doc.data() });
-    });
-    
-    // 데이터 로드 후 현재 필터 상태에 맞춰 갱신
-    const activeBtn = document.querySelector('.filter-btn.active');
-    const currentCategory = activeBtn ? activeBtn.dataset.category : 'all';
-    filterCategory(currentCategory);
+    try {
+        locations = []; 
+        snapshot.forEach((doc) => {
+            locations.push({ id: doc.id, ...doc.data() });
+        });
+        
+        // 데이터 로드 후 현재 필터 상태에 맞춰 갱신
+        const activeBtn = document.querySelector('.filter-btn.active');
+        const currentCategory = activeBtn ? activeBtn.dataset.category : 'all';
+        filterCategory(currentCategory);
+        
+        // 데이터 로드 완료 후 탭 이벤트를 다시 연결합니다.
+        // (이 로직은 보통 HTML 로드 후 한 번만 실행하는 것이 좋지만, onSnapshot 내부에서도 작동합니다.)
+        document.querySelectorAll('.tab-button').forEach(button => {
+            button.addEventListener('click', () => {
+                filterCategory(button.dataset.category);
+            });
+        });
+        
+    } catch (e) {
+        // 이 에러가 보인다면 보안 규칙이나 연결 설정을 다시 확인해야 합니다.
+        console.error("Firebase 실시간 데이터 로드 중 오류 발생:", e);
+        // alert("Firebase 데이터 로드 중 오류가 발생했습니다. (보안 규칙 문제일 가능성 높음)");
+    }
 });
 
 window.toggleLike = async function(docId) {
@@ -239,76 +291,132 @@ window.toggleLike = async function(docId) {
     } catch (e) {
         console.error("좋아요 실패:", e);
         alert("오류가 발생했습니다.");
-        // (실패하면 다시 되돌리는 로직이 있으면 좋지만 해커톤이니 패스)
     }
 }
 
 // -----------------------------------------------------------
-// [공통 함수] 지도에 핀(마커) 찍기 - 모든 기능 통합 (리뷰 버튼 포함!)
+
 // -----------------------------------------------------------
-// [수정] 공통 함수 (팝업 넓히기 + 버튼 완벽 중앙 정렬)
+// 4.1. 카테고리별 커스텀 마커 아이콘 설정
+// -----------------------------------------------------------
+const categoryIcons = {
+    food: { icon: 'fa-utensils', color: '#e67e22' },   // 주황색
+    view: { icon: 'fa-mountain', color: '#3498db' },   // 파란색
+    culture: { icon: 'fa-archway', color: '#9b59b6' }, // 보라색
+    station: { icon: 'fa-subway', color: '#2c3e50' }   // 진한 회색
+};
+
+/**
+ * 카테고리에 맞는 Font Awesome 아이콘을 가진 커스텀 마커 아이콘을 생성합니다.
+ */
+function getCustomIcon(category) {
+    const iconData = categoryIcons[category] || { icon: 'fa-map-pin', color: '#7f8c8d' };
+    
+    // custom-marker 클래스는 CSS에서 정의된 핀 모양 디자인을 적용합니다.
+    const htmlContent = `<div class="custom-marker" style="background-color: ${iconData.color};">
+                             <i class="fas ${iconData.icon}"></i>
+                         </div>`;
+
+    return L.divIcon({
+        className: 'custom-marker-wrapper', // CSS에서 Leaflet 기본 스타일을 덮어쓰기 위한 래퍼
+        html: htmlContent,
+        iconSize: [30, 42],     // 마커의 크기 (CSS와 일치)
+        iconAnchor: [15, 42]    // 핀의 뾰족한 끝이 정확한 좌표를 가리키도록 설정
+    });
+}
+
+// [수정] 공통 함수 (리뷰 버튼 중앙 정렬 완벽 적용)
 function updateMapMarkers(targetLocations) {
     markerCluster.clearLayers(); 
     const t = translations[currentLang]; 
-    
-    // 1. 내 컴퓨터의 '좋아요 목록'을 꺼내옴 (방금 업데이트된 따끈한 정보)
     const myLikes = JSON.parse(localStorage.getItem('myLikedPlaces')) || [];
 
+    // ⭐ 현재 필터링된 목록에서 "station" 카테고리가 포함되어 있는지 확인
+    const isStationCategory = targetLocations.some(loc => loc.category === 'station'); 
+
     targetLocations.forEach(loc => {
-        var marker = L.marker([loc.lat, loc.lng]);
+        const customIcon = getCustomIcon(loc.category);
+        var marker = L.marker([loc.lat, loc.lng], {
+            icon: customIcon 
+        });
         
         let displayName = loc.name;
         if (currentLang === 'ja' && loc.name_ja) {
             displayName = loc.name_ja;
         }
 
-        // 2. 내 목록에 있으면 빨강, 없으면 회색
         const isLiked = myLikes.includes(loc.id);
         const heartColor = isLiked ? "#ff4757" : "#ccc"; 
         const heartIcon = isLiked ? "fas" : "far"; 
 
-        const popupContent = `
-            <div class="popup-content" style="min-width: 220px; display: flex; flex-direction: column; gap: 8px;">
-                <span class="popup-title" style="margin-bottom: 5px; font-size: 15px;">${displayName}</span>
-                
-                <button class="weather-btn" style="width: 100%; display: flex; justify-content: center; align-items: center;" 
-                        onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
-                    <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
-                </button>
-                
-                <div style="display:flex; gap:6px; width: 100%;">
-                    <button class="weather-btn" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); flex:1; display: flex; justify-content: center; align-items: center; margin:0; padding: 8px 0;" 
-                            onclick="openReviewModal('${loc.id}', '${displayName}')">
-                        <i class="fas fa-pen"></i> ${t.review_write}
+        // ⭐ 공통 버튼 스타일 (중앙 정렬용)
+        const btnStyle = "width: 100%; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0;";
+        const halfBtnStyle = "flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0; padding: 8px 0;";
+
+        let popupContent = '';
+        
+        // 1. 교통(station)일 때: 심플 버전
+        if (loc.category === 'station' && isStationCategory) {
+            popupContent = `
+                <div class="popup-content" style="min-width: 220px; display: flex; flex-direction: column; gap: 8px;">
+                    <span class="popup-title" style="margin-bottom: 5px; font-size: 16px; color:#0056b3;">
+                        <i class="fas fa-train" style="margin-right: 5px;"></i>${displayName}
+                    </span>
+                    
+                    <button class="weather-btn" style="${btnStyle}" 
+                            onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
+                        <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
                     </button>
-                    <button class="weather-btn" style="background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%); flex:1; display: flex; justify-content: center; align-items: center; margin:0; padding: 8px 0;" 
-                            onclick="openReadReviewModal('${loc.id}')">
-                        <i class="fas fa-book"></i> ${t.review_read}
+
+                    <button class="weather-btn" style="${btnStyle} background: white; border: 1px solid #ddd; color: #333;" 
+                            onclick="toggleLike('${loc.id}')">
+                        <i class="${heartIcon} fa-heart" style="color: ${heartColor};"></i>
+                        <span style="font-weight:bold; color:${heartColor};">${loc.likes || 0}</span>
+                        <span style="font-size:11px; color:#888;">${t.popup_like}</span>
                     </button>
                 </div>
-                
-                <button class="weather-btn" style="width: 100%; background: white; border: 1px solid #ddd; color: #333; display: flex; justify-content: center; align-items: center; margin:0;" 
-                        onclick="toggleLike('${loc.id}')">
-                    <i class="${heartIcon} fa-heart" style="color: ${heartColor}; margin-right: 5px;"></i>
-                    <span style="font-weight:bold; color:${heartColor};">${loc.likes || 0}</span>
-                    <span style="font-size:11px; color:#888; margin-left:5px;">${t.popup_like}</span>
-                </button>
-            </div>
-        `;
-        
+            `;
+        } else {
+            // 2. 일반 관광지일 때: 풀 버전 (리뷰 버튼 포함)
+            popupContent = `
+                <div class="popup-content" style="min-width: 220px; display: flex; flex-direction: column; gap: 8px;">
+                    <span class="popup-title" style="margin-bottom: 5px; font-size: 15px;">${displayName}</span>
+                    
+                    <button class="weather-btn" style="${btnStyle}" 
+                            onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
+                        <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
+                    </button>
+                    
+                    <div style="display:flex; gap:6px; width: 100%;">
+                        <button class="weather-btn" style="${halfBtnStyle} background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%);" 
+                                onclick="openReviewModal('${loc.id}', '${displayName}')">
+                            <i class="fas fa-pen"></i> ${t.review_write}
+                        </button>
+                        <button class="weather-btn" style="${halfBtnStyle} background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%);" 
+                                onclick="openReadReviewModal('${loc.id}')">
+                            <i class="fas fa-book"></i> ${t.review_read}
+                        </button>
+                    </div>
+                    
+                    <button class="weather-btn" style="${btnStyle} background: white; border: 1px solid #ddd; color: #333;" 
+                            onclick="toggleLike('${loc.id}')">
+                        <i class="${heartIcon} fa-heart" style="color: ${heartColor};"></i>
+                        <span style="font-weight:bold; color:${heartColor};">${loc.likes || 0}</span>
+                        <span style="font-size:11px; color:#888;">${t.popup_like}</span>
+                    </button>
+                </div>
+            `;
+        }
+
         marker.bindPopup(popupContent);
         
         marker.on('click', () => { 
             selectedPlaceId = loc.id; 
-            map.flyTo([loc.lat, loc.lng], 14, { duration: 1.5 }); 
+            // map.flyTo([loc.lat, loc.lng], 14, { duration: 1.5 }); // 줌인 제거
         });
         
         marker.on('popupclose', () => {
-            setTimeout(() => {
-                if (selectedPlaceId === loc.id) {
-                    // 닫힘 처리
-                }
-            }, 100);
+            setTimeout(() => { if (selectedPlaceId === loc.id) {} }, 100);
         });
 
         markerCluster.addLayer(marker);
@@ -321,10 +429,16 @@ function updateMapMarkers(targetLocations) {
 
 // [카테고리 필터]
 window.filterCategory = function(category) {
-    const filtered = category === 'all' 
-        ? locations 
-        : locations.filter(loc => loc.category === category);
-
+    let filtered;
+    
+    // ⭐ [핵심 수정] 'all' 탭을 눌렀을 때 'station' 카테고리만 제외하고 필터링합니다.
+    if (category === 'all') {
+        filtered = locations.filter(loc => loc.category !== 'station'); 
+    } else {
+        // 'food', 'view', 'culture', 'station' 등 특정 탭을 누른 경우
+        filtered = locations.filter(loc => loc.category === category);
+    }
+    
     updateMapMarkers(filtered); // 공통 함수 호출
     updateBtnStyle(category);
 }
@@ -594,12 +708,28 @@ window.translateReview = async function(docId, text) {
 // 8. 데이터 업로드 (필요할 때만 주석 풀기)
 // -----------------------------------------------------------
 async function uploadData() {
-    const placesCol = collection(db, "places");
-    if (!confirm("데이터를 업로드하시겠습니까?")) return;
+    // 확인 팝업의 텍스트를 "덮어쓰기"로 명확히 수정
+    if (!confirm("데이터를 업로드하시겠습니까? (기존 데이터는 덮어쓰여집니다)")) return;
+    
     console.log(`총 ${initialData.length}개 업로드 시작...`);
+    
+    let uploadCount = 0;
+    
     for (const item of initialData) {
-        try { await addDoc(placesCol, item); } catch (e) { console.error(e); }
+        // 1. 장소 이름을 기반으로 고유 ID 생성 (특수문자 및 공백 제거)
+        // 이 고유 ID가 Firebase 문서 ID로 사용됩니다.
+        const uniqueId = item.name.replace(/[^a-zA-Z0-9가-힣]/g, ''); 
+        
+        try {
+            // 2. addDoc 대신 setDoc 사용: 중복 방지
+            await setDoc(doc(db, "places", uniqueId), item);
+            uploadCount++;
+        } catch (e) { 
+            console.error("데이터 업로드 중 오류 발생:", item.name, e); 
+        }
     }
-    alert("업로드 완료!");
+    
+    console.log(`✅ 총 ${uploadCount}개의 데이터 업로드 완료.`);
+    alert(`데이터 업로드 완료! 총 ${uploadCount}개 항목이 덮어쓰여졌습니다.`);
 }
 // uploadData();

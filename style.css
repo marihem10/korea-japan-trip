@@ -337,3 +337,92 @@ textarea {
     color: white;
     box-shadow: 0 2px 5px rgba(0,0,0,0.2);
 }
+
+/* ======================================= */
+/* ⭐ 마커 클러스터 색상 변경 스타일 (최종 FIX) */
+/* ======================================= */
+
+/* 1. 10개 이하: 초록색 (mc-green) - [기존 유지] */
+.marker-cluster.mc-green div { background-color: #2ecc71; }
+.marker-cluster.mc-green:hover div { background-color: #27ae60; }
+/* 초록색 외곽선 */
+.marker-cluster.mc-green.marker-cluster-small div { background-color: rgba(46, 204, 113, 0.6); }
+.marker-cluster.mc-green.marker-cluster-medium div { background-color: rgba(46, 204, 113, 0.7); }
+.marker-cluster.mc-green.marker-cluster-large div { background-color: rgba(46, 204, 113, 0.8); }
+
+
+/* 2. 30개 이하: 노랑색 (mc-yellow) - [기존 유지] */
+.marker-cluster.mc-yellow div { background-color: #f1c40f; }
+.marker-cluster.mc-yellow:hover div { background-color: #f39c12; }
+/* 노랑색 외곽선 */
+.marker-cluster.mc-yellow.marker-cluster-small div { background-color: rgba(241, 196, 15, 0.6); }
+.marker-cluster.mc-yellow.marker-cluster-medium div { background-color: rgba(241, 196, 15, 0.7); }
+.marker-cluster.mc-yellow.marker-cluster-large div { background-color: rgba(241, 196, 15, 0.8); }
+
+
+/* 3. 50개 이하: 주황색 (mc-orange) - [외곽선 FIX 추가] */
+.marker-cluster.mc-orange div { background-color: #e67e22; }
+.marker-cluster.mc-orange:hover div { background-color: #d35400; }
+/* ⭐ 외곽선 FIX: 주황색 외곽선이 정확히 보이도록 지정 */
+.marker-cluster.mc-orange.marker-cluster-small div { background-color: rgba(230, 126, 34, 0.6); }
+.marker-cluster.mc-orange.marker-cluster-medium div { background-color: rgba(230, 126, 34, 0.7); }
+.marker-cluster.mc-orange.marker-cluster-large div { background-color: rgba(230, 126, 34, 0.8); }
+
+
+/* 4. ⭐ 50개 초과: 빨간색 (mc-red) - [노란색/주황색 외곽선 문제 해결] */
+.marker-cluster.mc-red div { background-color: #e74c3c; } 
+.marker-cluster.mc-red:hover div { background-color: #c0392b; }
+/* ⭐ 외곽선 FIX: 빨간색 외곽선이 보이도록 강제 지정 (노란색/주황색 오버라이드) */
+.marker-cluster.mc-red.marker-cluster-small div { background-color: rgba(231, 76, 60, 0.6); }
+.marker-cluster.mc-red.marker-cluster-medium div { background-color: rgba(231, 76, 60, 0.7); }
+.marker-cluster.mc-red.marker-cluster-large div { background-color: rgba(231, 76, 60, 0.8); }
+
+/* ======================================= */
+/* ⭐ 카테고리별 커스텀 마커 아이콘 스타일 */
+/* ======================================= */
+
+/* Leaflet 기본 스타일을 초기화하고 커스텀 아이콘을 포함할 래퍼 */
+.custom-marker-wrapper {
+    background: none !important;
+    border: none !important;
+}
+
+/* 핀 모양의 메인 원형 컨테이너 */
+.custom-marker {
+    width: 30px;
+    height: 30px;
+    border-radius: 50%; /* 원형 */
+    color: white; /* 아이콘 색상 */
+    font-size: 14px;
+    line-height: 30px; 
+    text-align: center;
+    border: 3px solid white; /* 흰색 테두리 */
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    position: absolute;
+    top: 0;
+    left: 0;
+}
+
+/* 뾰족한 핀 모양 꼬리 (마름모 모양) */
+.custom-marker::after {
+    content: '';
+    position: absolute;
+    bottom: -8px; 
+    left: 50%;
+    transform: translateX(-50%) rotate(45deg); /* 마름모 모양 */
+    width: 15px;
+    height: 15px;
+    background-color: inherit; /* 부모 마커의 색상을 상속 */
+    border-radius: 0 50% 0 50%; 
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.4);
+    z-index: -1; 
+    /* 꼬리 부분에도 흰색 테두리 효과를 주기 위함 */
+    border-bottom: 3px solid white;
+    border-right: 3px solid white;
+}
+
+.custom-marker i {
+    /* Font Awesome 아이콘의 수직 정렬 조정 */
+    font-size: 14px;
+    line-height: 24px; 
+}
