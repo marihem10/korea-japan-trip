@@ -463,27 +463,31 @@ textarea {
     }
     .search-bar input { font-size: 14px; }
 
-    /* 4. 필터 버튼: 검색바 아래로 + ⭐ 옆으로 스크롤(Swipe) 가능하게 변경 */
+    /* 4. 필터 버튼: 옆으로 스크롤 되게 변경 (찌그러짐 방지) */
     .filter-bar {
         top: 140px;
         width: 100%;
-        padding: 0 15px;
-        justify-content: flex-start; /* 왼쪽 정렬 */
-        flex-wrap: nowrap !important; /* 줄바꿈 금지 (한 줄로 쭉) */
-        overflow-x: auto; /* 가로 스크롤 허용 */
-        gap: 8px;
+        padding: 10px 15px; /* 안쪽 여백 넉넉하게 */
         
-        /* 스크롤바 숨기기 (깔끔하게) */
+        display: flex; 
+        justify-content: flex-start; /* 왼쪽부터 정렬 */
+        flex-wrap: nowrap !important; /* 줄바꿈 절대 금지 (한 줄로 유지) */
+        overflow-x: auto; /* 가로 스크롤 허용 */
+        gap: 10px; /* 버튼 사이 간격 */
+        
+        /* 스크롤바 숨기기 */
         -ms-overflow-style: none; 
         scrollbar-width: none; 
     }
     .filter-bar::-webkit-scrollbar { display: none; }
 
     .filter-btn {
+        flex: 0 0 auto; /* ⭐ 핵심: 크기 자동 축소 방지 */
         white-space: nowrap; /* 글자 줄바꿈 방지 */
-        font-size: 12px;
-        padding: 6px 14px;
-        flex-shrink: 0; /* 버튼 찌그러짐 방지 */
+        font-size: 13px;
+        padding: 8px 16px;
+        border-radius: 20px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1); /* 입체감 추가 */
     }
 
     /* 5. 날씨 위젯: 상단이 복잡하니 '왼쪽 아래'로 이사 */

@@ -92,8 +92,14 @@ const translations = {
 // -----------------------------------------------------------
 // 3. 지도 및 기본 설정
 // -----------------------------------------------------------
-// 초기 위치를 부산-후쿠오카 중간으로, 줌을 8로 확대
-var map = L.map('map', { zoomControl: false }).setView([34.7, 129.8], 8);
+// 화면 너비가 600px보다 작으면 모바일로 간주
+var isMobile = window.innerWidth < 600;
+
+// 모바일이면 줌 7 (멀리), PC면 줌 8 (가깝게)
+var initialZoom = isMobile ? 7 : 8;
+
+// 중심 좌표: 부산과 후쿠오카의 중간 지점
+var map = L.map('map', { zoomControl: false }).setView([34.4, 129.5], initialZoom);
 
 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap contributors'
