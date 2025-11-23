@@ -464,101 +464,99 @@ textarea {
 /* ================================================= */
 @media (max-width: 600px) {
     
-    /* 1. 언어 버튼 */
+    /* 1. 언어 버튼: 크기 축소 */
     .lang-switch-container {
         top: 10px;
         left: 10px;
-        transform: scale(0.9); 
+        transform: scale(0.85); /* 85% 크기로 축소 */
         transform-origin: top left;
         z-index: 2000;
     }
 
-    /* 2. 검색바 */
+    /* 2. 검색바: 폰트 줄이고 높이 줄임 */
     .search-bar {
         top: 55px; 
-        width: 85%;
+        width: 90%; /* 너비 살짝 줄임 */
         padding: 10px 15px; 
-        font-size: 14px;
+        font-size: 13px; /* 글자 크기 축소 */
         border-radius: 25px;
         z-index: 2000;
     }
 
-    /* 3. 필터 버튼 */
+    /* 3. 필터 버튼: 화면 꽉 채우기 & 스크롤 여유 확보 */
     .filter-bar {
         top: 105px; 
-        width: auto;
-        max-width: 96%; /* 화면을 넘어가진 않게 */
-        min-width: fit-content; /* 내용물 크기만큼만 */
+        width: 96%; /* ⭐ [수정] 너비를 96%로 늘려서 공간 확보 */
         
         left: 50%;
         transform: translateX(-50%); 
         
-        padding: 5px;
+        padding: 5px 0; /* 상하 패딩만 줌 */
         border-radius: 30px;
         background: white;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
 
         display: flex;
-        justify-content: center; 
+        justify-content: flex-start; /* ⭐ [수정] 내용 많으면 왼쪽 정렬 (잘림 방지) */
         flex-wrap: nowrap !important; 
         overflow-x: auto; 
-        gap: 6px; 
+        gap: 5px; /* 간격 살짝 줄임 */
         
         -ms-overflow-style: none; 
         scrollbar-width: none;
         z-index: 1900;
     }
     
-    /* (추가) 버튼이 많아서 넘칠 때를 대비한 안전장치 */
-    .filter-bar > :first-child { margin-left: auto; }
-    .filter-bar > :last-child { margin-right: auto; }
+    /* 버튼이 적을 때는 가운데 정렬 (JavaScript로 클래스 추가하거나 CSS 트릭 사용) */
+    /* 여기서는 안전하게 왼쪽 정렬 + 좌우 여백으로 중앙 느낌 냄 */
+    .filter-bar::before, .filter-bar::after {
+        content: '';
+        flex: 0 0 auto;
+        width: 10px; /* 양옆 여백 */
+    }
 
     .filter-btn {
         flex: 0 0 auto;
         white-space: nowrap;
-        font-size: 13px; 
-        height: 36px; 
+        font-size: 12px; /* ⭐ [수정] 글자 크기 축소 */
+        height: 34px; /* 높이 축소 */
         display: flex;
         align-items: center;
         justify-content: center;
-        padding: 0 16px;
+        padding: 0 12px; /* 좌우 패딩 축소 */
         border-radius: 25px; 
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
-    /* 4. 환율 위젯 (위치 더 위로 올림) */
+    /* 4. 환율 위젯 */
     .exchange-widget {
         top: auto !important; 
-        
-        /* ⭐ [수정] 125px -> 170px로 변경 (넉넉하게 띄움) */
         bottom: calc(150px + env(safe-area-inset-bottom)) !important; 
-        
         left: 15px !important;
         right: auto !important;
         
         min-width: auto;
-        padding: 10px 15px;
-        transform: scale(0.95);
+        padding: 8px 12px;
+        transform: scale(0.9); /* 90% 크기 */
         transform-origin: bottom left;
         z-index: 2000;
     }
     .exchange-desc { display: none; } 
     
-    /* 5. 날씨 위젯 (안전 구역 계산 추가) */
+    /* 5. 날씨 위젯 */
     .weather-widget {
         top: auto !important;
-        /* calc로 계산: 30px + 기기별 하단 여백 */
         bottom: calc(30px + env(safe-area-inset-bottom)) !important;
         left: 15px !important;
         right: auto !important;
         
         min-width: auto;
-        padding: 12px 18px;
-        transform: scale(0.95);
+        padding: 10px 15px;
+        transform: scale(0.9); /* 90% 크기 */
         transform-origin: bottom left;
         z-index: 2000;
     }
-    .weather-temp { font-size: 24px; }
+    .weather-temp { font-size: 22px; }
     .weather-header { font-size: 12px; }
     .weather-desc { font-size: 10px; }
 }
