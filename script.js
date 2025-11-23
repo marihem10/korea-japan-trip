@@ -331,7 +331,7 @@ function updateMapMarkers(targetLocations) {
     const t = translations[currentLang]; 
     const myLikes = JSON.parse(localStorage.getItem('myLikedPlaces')) || [];
 
-    // ⭐ 현재 필터링된 목록에서 "station" 카테고리가 포함되어 있는지 확인
+    // 현재 필터링된 목록에서 "station" 카테고리가 포함되어 있는지 확인
     const isStationCategory = targetLocations.some(loc => loc.category === 'station'); 
 
     targetLocations.forEach(loc => {
@@ -349,13 +349,27 @@ function updateMapMarkers(targetLocations) {
         const heartColor = isLiked ? "#ff4757" : "#ccc"; 
         const heartIcon = isLiked ? "fas" : "far"; 
 
-        // ⭐ 공통 버튼 스타일 (중앙 정렬용)
+        // 공통 버튼 스타일
         const btnStyle = "width: 100%; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0;";
         const halfBtnStyle = "flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0; padding: 8px 0;";
 
+        // ⭐ 리뷰 버튼 HTML (공통으로 쓰기 위해 변수로 뺌)
+        const reviewButtonsHtml = `
+            <div style="display:flex; gap:6px; width: 100%;">
+                <button class="weather-btn" style="${halfBtnStyle} background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%);" 
+                        onclick="openReviewModal('${loc.id}', '${displayName}')">
+                    <i class="fas fa-pen"></i> ${t.review_write}
+                </button>
+                <button class="weather-btn" style="${halfBtnStyle} background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%);" 
+                        onclick="openReadReviewModal('${loc.id}')">
+                    <i class="fas fa-book"></i> ${t.review_read}
+                </button>
+            </div>
+        `;
+
         let popupContent = '';
         
-        // 1. 교통(station)일 때: 심플 버전
+        // 1. 교통(station)일 때
         if (loc.category === 'station' && isStationCategory) {
             popupContent = `
                 <div class="popup-content" style="min-width: 220px; display: flex; flex-direction: column; gap: 8px;">
@@ -368,6 +382,8 @@ function updateMapMarkers(targetLocations) {
                         <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
                     </button>
 
+                    ${reviewButtonsHtml}
+
                     <button class="weather-btn" style="${btnStyle} background: white; border: 1px solid #ddd; color: #333;" 
                             onclick="toggleLike('${loc.id}')">
                         <i class="${heartIcon} fa-heart" style="color: ${heartColor};"></i>
@@ -377,7 +393,7 @@ function updateMapMarkers(targetLocations) {
                 </div>
             `;
         } else {
-            // 2. 일반 관광지일 때: 풀 버전 (리뷰 버튼 포함)
+            // 2. 일반 관광지일 때
             popupContent = `
                 <div class="popup-content" style="min-width: 220px; display: flex; flex-direction: column; gap: 8px;">
                     <span class="popup-title" style="margin-bottom: 5px; font-size: 15px;">${displayName}</span>
@@ -387,16 +403,7 @@ function updateMapMarkers(targetLocations) {
                         <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
                     </button>
                     
-                    <div style="display:flex; gap:6px; width: 100%;">
-                        <button class="weather-btn" style="${halfBtnStyle} background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%);" 
-                                onclick="openReviewModal('${loc.id}', '${displayName}')">
-                            <i class="fas fa-pen"></i> ${t.review_write}
-                        </button>
-                        <button class="weather-btn" style="${halfBtnStyle} background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%);" 
-                                onclick="openReadReviewModal('${loc.id}')">
-                            <i class="fas fa-book"></i> ${t.review_read}
-                        </button>
-                    </div>
+                    ${reviewButtonsHtml}
                     
                     <button class="weather-btn" style="${btnStyle} background: white; border: 1px solid #ddd; color: #333;" 
                             onclick="toggleLike('${loc.id}')">
@@ -412,7 +419,6 @@ function updateMapMarkers(targetLocations) {
         
         marker.on('click', () => { 
             selectedPlaceId = loc.id; 
-            // map.flyTo([loc.lat, loc.lng], 14, { duration: 1.5 }); // 줌인 제거
         });
         
         marker.on('popupclose', () => {
@@ -433,7 +439,7 @@ window.filterCategory = function(category) {
     
     // ⭐ [핵심 수정] 'all' 탭을 눌렀을 때 'station' 카테고리만 제외하고 필터링합니다.
     if (category === 'all') {
-        filtered = locations.filter(loc => loc.category !== 'station'); 
+        filtered = locations; // 모든 장소 다 보여줌
     } else {
         // 'food', 'view', 'culture', 'station' 등 특정 탭을 누른 경우
         filtered = locations.filter(loc => loc.category === category);
