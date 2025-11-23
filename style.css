@@ -2,10 +2,20 @@
 * { margin: 0; padding: 0; box-sizing: border-box; font-family: 'Noto Sans KR', sans-serif; }
 body { overflow: hidden; }
 
+/* [추가] 모바일 브라우저 자동 폰트 확대 방지 */
+html {
+    -webkit-text-size-adjust: 100%;
+    text-size-adjust: 100%;
+}
+
+button, input {
+    font-family: 'Noto Sans KR', sans-serif; /* 폰트 강제 통일 */
+}
+
 /* 지도 배경 */
 #map {
     width: 100vw;
-    height: 100vh;
+    height: 100dvh; 
     z-index: 1;
 }
 
@@ -496,29 +506,33 @@ textarea {
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
-    /* 4. 환율 위젯 */
+    /* 4. 환율 위젯 (안전 구역 계산 추가) */
     .exchange-widget {
         top: auto !important; 
-        bottom: 120px !important; 
-        left: 10px !important;
+        /* calc로 계산: 125px + 기기별 하단 여백 */
+        bottom: calc(125px + env(safe-area-inset-bottom)) !important; 
+        left: 15px !important;
         right: auto !important;
         
         min-width: auto;
         padding: 10px 15px;
+        transform: scale(0.95);
         transform-origin: bottom left;
         z-index: 2000;
     }
     .exchange-desc { display: none; } 
     
-    /* 5. 날씨 위젯 */
+    /* 5. 날씨 위젯 (안전 구역 계산 추가) */
     .weather-widget {
         top: auto !important;
-        bottom: 25px !important; 
-        left: 10px !important;
+        /* calc로 계산: 30px + 기기별 하단 여백 */
+        bottom: calc(30px + env(safe-area-inset-bottom)) !important;
+        left: 15px !important;
         right: auto !important;
         
         min-width: auto;
         padding: 12px 18px;
+        transform: scale(0.95);
         transform-origin: bottom left;
         z-index: 2000;
     }
