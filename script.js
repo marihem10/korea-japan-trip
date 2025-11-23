@@ -92,7 +92,9 @@ const translations = {
 // -----------------------------------------------------------
 // 3. 지도 및 기본 설정
 // -----------------------------------------------------------
-var map = L.map('map', { zoomControl: false }).setView([36.5, 133], 5);
+// 초기 위치를 부산-후쿠오카 중간으로, 줌을 8로 확대
+var map = L.map('map', { zoomControl: false }).setView([34.7, 129.8], 8);
+
 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
@@ -427,28 +429,52 @@ window.filterCategory = function(category) {
     updateBtnStyle(category);
 }
 
-// [검색 기능]
-document.getElementById('search-input').addEventListener('input', function(e) {
-    const searchTerm = e.target.value.toLowerCase(); 
+// -----------------------------------------------------------
+// [검색 기능] 검색어 필터링 + 엔터키 이동
+// -----------------------------------------------------------
+const searchInput = document.getElementById('search-input');
 
+// 1. 입력할 때마다 핀 필터링 (기존 기능)
+searchInput.addEventListener('input', function(e) {
+    const searchTerm = e.target.value.toLowerCase(); 
+    
     const searched = locations.filter(loc => {
         const koName = loc.name.toLowerCase();
         const jaName = loc.name_ja ? loc.name_ja.toLowerCase() : "";
         return koName.includes(searchTerm) || jaName.includes(searchTerm);
     });
 
-    updateMapMarkers(searched); // 공통 함수 호출
+    updateMapMarkers(searched);
 });
 
-function updateBtnStyle(category) {
-    const buttons = document.querySelectorAll('.filter-btn');
-    buttons.forEach(btn => {
-        btn.classList.remove('active');
-        if (btn.dataset.category === category) {
-            btn.classList.add('active');
+// 2. [추가됨] 엔터(Enter) 키 누르면 그 위치로 이동!
+searchInput.addEventListener('keydown', function(e) {
+    if (e.key === 'Enter') {
+        const searchTerm = e.target.value.toLowerCase(); 
+
+        // 다시 한 번 검색 결과 찾기
+        const searched = locations.filter(loc => {
+            const koName = loc.name.toLowerCase();
+            const jaName = loc.name_ja ? loc.name_ja.toLowerCase() : "";
+            return koName.includes(searchTerm) || jaName.includes(searchTerm);
+        });
+
+        if (searched.length === 0) {
+            return; // 결과 없으면 가만히 있음
         }
-    });
-}
+
+        // A. 결과가 딱 1개면 -> 거기로 '슝~' 날아가기
+        if (searched.length === 1) {
+            const target = searched[0];
+            map.flyTo([target.lat, target.lng], 15, { duration: 1.5 });
+        } 
+        // B. 결과가 여러 개면 -> 다 보이게 지도 줌 조절
+        else {
+            const bounds = searched.map(loc => [loc.lat, loc.lng]);
+            map.fitBounds(bounds, { padding: [50, 50], maxZoom: 15 });
+        }
+    }
+});
 
 // -----------------------------------------------------------
 // 6. 언어 전환 함수
