@@ -506,11 +506,13 @@ textarea {
         box-shadow: 0 2px 4px rgba(0,0,0,0.1);
     }
 
-    /* 4. 환율 위젯 (안전 구역 계산 추가) */
+    /* 4. 환율 위젯 (위치 더 위로 올림) */
     .exchange-widget {
         top: auto !important; 
-        /* calc로 계산: 125px + 기기별 하단 여백 */
-        bottom: calc(125px + env(safe-area-inset-bottom)) !important; 
+        
+        /* ⭐ [수정] 125px -> 170px로 변경 (넉넉하게 띄움) */
+        bottom: calc(170px + env(safe-area-inset-bottom)) !important; 
+        
         left: 15px !important;
         right: auto !important;
         
