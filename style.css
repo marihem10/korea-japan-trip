@@ -441,24 +441,27 @@ textarea {
         z-index: 2000;
     }
 
-    /* 2. 검색바: 폭을 줄임 (85%) */
+    /* 2. 검색바 */
     .search-bar {
         top: 55px; 
-        width: 85%; /* ⭐ [수정] 92% -> 85% (더 짧게) */
+        width: 85%;
         padding: 10px 15px; 
         font-size: 14px;
         border-radius: 25px;
         z-index: 2000;
     }
 
-    /* 3. 필터 버튼: 검색바와 폭 통일 (85%) */
+    /* 3. 필터 바 */
     .filter-bar {
         top: 105px; 
-        width: 85%; /* ⭐ [수정] 92% -> 85% (검색바와 맞춤) */
+        width: 85%; 
         left: 50%;
         transform: translateX(-50%); 
-        padding: 5px 0;
-        
+        padding: 5px; /* 안쪽 여백을 살짝 줘서 버튼이 꽉 차지 않게 */
+        border-radius: 30px;  
+        background: white;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.1); /* 그림자 추가해서 더 예쁘게 */
+
         display: flex;
         justify-content: center; 
         flex-wrap: nowrap !important; 
@@ -469,15 +472,14 @@ textarea {
         scrollbar-width: none;
         z-index: 1900;
     }
-    .filter-bar::-webkit-scrollbar { display: none; }
 
     .filter-btn {
         flex: 0 0 auto;
         white-space: nowrap;
         font-size: 13px; 
-        padding: 8px 14px; 
-        border-radius: 20px; 
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        padding: 8px 16px;
+        border-radius: 25px; 
+        box-shadow: none; /* 겉 박스에 그림자가 있으니 버튼 그림자는 빼서 깔끔하게 */
     }
 
     /* 4. 환율 위젯 */
