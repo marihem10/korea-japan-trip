@@ -435,6 +435,20 @@ window.filterCategory = function(category) {
     updateBtnStyle(category);
 }
 
+function updateBtnStyle(category) {
+    const buttons = document.querySelectorAll('.filter-btn');
+    
+    buttons.forEach(btn => {
+        // 1. 일단 모든 버튼에서 'active'(검은색) 뺏기
+        btn.classList.remove('active');
+        
+        // 2. 내가 누른 버튼(카테고리가 일치하는 것)만 'active' 주기
+        if (btn.dataset.category === category) {
+            btn.classList.add('active');
+        }
+    });
+}
+
 // -----------------------------------------------------------
 // [검색 기능] 검색어 필터링 + 엔터키 이동
 // -----------------------------------------------------------
@@ -743,4 +757,4 @@ async function uploadData() {
     }
     alert("업로드 완료!");
 }
-uploadData();
+//uploadData();
