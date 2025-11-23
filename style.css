@@ -483,49 +483,40 @@ textarea {
         z-index: 2000;
     }
 
-    /* 3. 필터 버튼: 화면 꽉 채우기 & 스크롤 여유 확보 */
+    /* 3. 필터 버튼: 스크롤 없이 한 줄에 꽉 채우기 */
     .filter-bar {
         top: 105px; 
-        width: 96%; /* ⭐ [수정] 너비를 96%로 늘려서 공간 확보 */
-        
+        width: 90%; /* 화면 너비 90% */
         left: 50%;
         transform: translateX(-50%); 
+        padding: 5px;
         
-        padding: 5px 0; /* 상하 패딩만 줌 */
+        display: flex;
+        /* ⭐ [수정] 버튼 간격을 균등하게 벌려서 중앙 정렬 효과 */
+        justify-content: space-evenly; 
+        align-items: center;
+        flex-wrap: nowrap !important; /* 줄바꿈 금지 */
+        
         border-radius: 30px;
         background: white;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-
-        display: flex;
-        justify-content: flex-start; /* ⭐ [수정] 내용 많으면 왼쪽 정렬 (잘림 방지) */
-        flex-wrap: nowrap !important; 
-        overflow-x: auto; 
-        gap: 5px; /* 간격 살짝 줄임 */
-        
-        -ms-overflow-style: none; 
-        scrollbar-width: none;
         z-index: 1900;
-    }
-    
-    /* 버튼이 적을 때는 가운데 정렬 (JavaScript로 클래스 추가하거나 CSS 트릭 사용) */
-    /* 여기서는 안전하게 왼쪽 정렬 + 좌우 여백으로 중앙 느낌 냄 */
-    .filter-bar::before, .filter-bar::after {
-        content: '';
-        flex: 0 0 auto;
-        width: 10px; /* 양옆 여백 */
     }
 
     .filter-btn {
-        flex: 0 0 auto;
+        flex: 1; /* ⭐ [수정] 모든 버튼이 공평한 너비를 가짐 */
         white-space: nowrap;
-        font-size: 12px; /* ⭐ [수정] 글자 크기 축소 */
-        height: 34px; /* 높이 축소 */
-        display: flex;
-        align-items: center;
-        justify-content: center;
-        padding: 0 12px; /* 좌우 패딩 축소 */
+        font-size: 12px; /* 글자가 길어질 수 있으니 살짝 줄임 */
+        padding: 8px 0; /* 좌우 패딩을 없애고 flex로 조절 */
+        text-align: center;
+        
         border-radius: 25px; 
-        box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        box-shadow: none; /* 깔끔하게 그림자 제거 */
+    }
+    
+    /* 선택된 버튼만 그림자 효과 */
+    .filter-btn.active {
+        box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
     }
 
     /* 4. 환율 위젯 */
