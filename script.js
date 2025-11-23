@@ -139,7 +139,6 @@ var markerCluster = L.markerClusterGroup({
     }
 });
 map.addLayer(markerCluster);
-map.addLayer(markerCluster);
 
 // ⭐ 현재 열려있는 팝업(장소)의 ID를 기억하는 변수
 let selectedPlaceId = null; 
@@ -334,6 +333,17 @@ function updateMapMarkers(targetLocations) {
     // 현재 필터링된 목록에서 "station" 카테고리가 포함되어 있는지 확인
     const isStationCategory = targetLocations.some(loc => loc.category === 'station'); 
 
+    // 카테고리별 제목 스타일 설정
+    const categoryStyles = {
+        food:    { color: '#d35400', icon: 'fa-utensils' },
+        view:    { color: '#2980b9', icon: 'fa-mountain' },
+        culture: { color: '#8e44ad', icon: 'fa-archway' },
+        station: { color: '#2c3e50', icon: 'fa-train' },
+        airport: { color: '#2c3e50', icon: 'fa-plane' },
+        shopping:{ color: '#f39c12', icon: 'fa-shopping-bag' },
+        default: { color: '#333333', icon: 'fa-map-marker-alt' }
+    };
+
     targetLocations.forEach(loc => {
         const customIcon = getCustomIcon(loc.category);
         var marker = L.marker([loc.lat, loc.lng], {
@@ -349,72 +359,40 @@ function updateMapMarkers(targetLocations) {
         const heartColor = isLiked ? "#ff4757" : "#ccc"; 
         const heartIcon = isLiked ? "fas" : "far"; 
 
-        // 공통 버튼 스타일
-        const btnStyle = "width: 100%; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0;";
-        const halfBtnStyle = "flex: 1; display: flex; justify-content: center; align-items: center; gap: 5px; margin: 0; padding: 8px 0;";
+        const myStyle = categoryStyles[loc.category] || categoryStyles.default;
 
-        // ⭐ 리뷰 버튼 HTML (공통으로 쓰기 위해 변수로 뺌)
-        const reviewButtonsHtml = `
-            <div style="display:flex; gap:6px; width: 100%;">
-                <button class="weather-btn" style="${halfBtnStyle} background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%);" 
-                        onclick="openReviewModal('${loc.id}', '${displayName}')">
-                    <i class="fas fa-pen"></i> ${t.review_write}
+        const popupContent = `
+            <div class="popup-content" style="min-width: 220px; display: flex; flex-direction: column; gap: 8px;">
+                
+                <span class="popup-title" style="font-size: 15px; font-weight: bold; color: ${myStyle.color}; margin-bottom: 5px;">
+                    <i class="fas ${myStyle.icon}" style="margin-right: 5px;"></i>${displayName}
+                </span>
+                
+                <button class="weather-btn" style="width: 100%; display: flex; justify-content: center; align-items: center; margin: 0;" 
+                        onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
+                    <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
                 </button>
-                <button class="weather-btn" style="${halfBtnStyle} background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%);" 
-                        onclick="openReadReviewModal('${loc.id}')">
-                    <i class="fas fa-book"></i> ${t.review_read}
+                
+                <div style="display:flex; gap:6px; width: 100%;">
+                    <button class="weather-btn" style="background: linear-gradient(135deg, #FF9966 0%, #FF5E62 100%); flex:1; display: flex; justify-content: center; align-items: center; margin:0; padding: 8px 0;" 
+                            onclick="openReviewModal('${loc.id}', '${displayName}')">
+                        <i class="fas fa-pen"></i> ${t.review_write}
+                    </button>
+                    <button class="weather-btn" style="background: linear-gradient(135deg, #56CCF2 0%, #2F80ED 100%); flex:1; display: flex; justify-content: center; align-items: center; margin:0; padding: 8px 0;" 
+                            onclick="openReadReviewModal('${loc.id}')">
+                        <i class="fas fa-book"></i> ${t.review_read}
+                    </button>
+                </div>
+                
+                <button class="weather-btn" style="width: 100%; background: white; border: 1px solid #ddd; color: #333; display: flex; justify-content: center; align-items: center; margin:0;" 
+                        onclick="toggleLike('${loc.id}')">
+                    <i class="${heartIcon} fa-heart" style="color: ${heartColor}; margin-right: 5px;"></i>
+                    <span style="font-weight:bold; color:${heartColor};">${loc.likes || 0}</span>
+                    <span style="font-size:11px; color:#888; margin-left:5px;">${t.popup_like}</span>
                 </button>
             </div>
         `;
-
-        let popupContent = '';
         
-        // 1. 교통(station)일 때
-        if (loc.category === 'station' && isStationCategory) {
-            popupContent = `
-                <div class="popup-content" style="min-width: 220px; display: flex; flex-direction: column; gap: 8px;">
-                    <span class="popup-title" style="margin-bottom: 5px; font-size: 16px; color:#0056b3;">
-                        <i class="fas fa-train" style="margin-right: 5px;"></i>${displayName}
-                    </span>
-                    
-                    <button class="weather-btn" style="${btnStyle}" 
-                            onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
-                        <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
-                    </button>
-
-                    ${reviewButtonsHtml}
-
-                    <button class="weather-btn" style="${btnStyle} background: white; border: 1px solid #ddd; color: #333;" 
-                            onclick="toggleLike('${loc.id}')">
-                        <i class="${heartIcon} fa-heart" style="color: ${heartColor};"></i>
-                        <span style="font-weight:bold; color:${heartColor};">${loc.likes || 0}</span>
-                        <span style="font-size:11px; color:#888;">${t.popup_like}</span>
-                    </button>
-                </div>
-            `;
-        } else {
-            // 2. 일반 관광지일 때
-            popupContent = `
-                <div class="popup-content" style="min-width: 220px; display: flex; flex-direction: column; gap: 8px;">
-                    <span class="popup-title" style="margin-bottom: 5px; font-size: 15px;">${displayName}</span>
-                    
-                    <button class="weather-btn" style="${btnStyle}" 
-                            onclick="fetchWeather(${loc.lat}, ${loc.lng}, '${displayName}')">
-                        <i class="fas fa-cloud-sun"></i> ${t.popup_weather}
-                    </button>
-                    
-                    ${reviewButtonsHtml}
-                    
-                    <button class="weather-btn" style="${btnStyle} background: white; border: 1px solid #ddd; color: #333;" 
-                            onclick="toggleLike('${loc.id}')">
-                        <i class="${heartIcon} fa-heart" style="color: ${heartColor};"></i>
-                        <span style="font-weight:bold; color:${heartColor};">${loc.likes || 0}</span>
-                        <span style="font-size:11px; color:#888;">${t.popup_like}</span>
-                    </button>
-                </div>
-            `;
-        }
-
         marker.bindPopup(popupContent);
         
         marker.on('click', () => { 
@@ -543,39 +521,35 @@ window.setRating = function(score) {
     });
 }
 
-// [수정] 리뷰 저장 함수 (1인 1리뷰 제한 기능 추가)
+// 리뷰 저장 함수
 window.submitReview = async function() {
     const text = document.getElementById('review-text').value;
     const rating = document.getElementById('review-rating').value;
-    
-    // 현재 언어 설정
     const t = translations[currentLang];
 
-    // 1. 내용 비었는지 확인
     if (!text) { 
         alert(t.alert_input_empty); 
         return; 
     }
 
-    // ⭐ 2. 이미 썼는지 확인 (내 컴퓨터 기록 조회)
-    // 'myReviewedPlaces'라는 이름으로 내가 쓴 장소 ID들을 저장해둠
     let myReviews = JSON.parse(localStorage.getItem('myReviewedPlaces')) || [];
-
     if (myReviews.includes(currentReviewPlaceId)) {
-        alert(t.alert_already_reviewed); // "이미 작성했습니다!"
-        return; // 함수 강제 종료 (저장 안 함)
+        alert(t.alert_already_reviewed); 
+        return; 
     }
 
     try {
-        // 3. Firebase에 저장
+        // ⭐ [핵심] 현재 언어 설정에 따라 국적 결정 (ko -> KR, ja -> JP)
+        const userCountry = currentLang === 'ko' ? 'KR' : 'JP';
+
         await addDoc(collection(db, "reviews"), {
             placeId: currentReviewPlaceId,
             text: text,
             rating: parseInt(rating),
-            createdAt: new Date().toISOString() 
+            createdAt: new Date().toISOString(),
+            country: userCountry // ⭐ 국기 데이터 추가!
         });
 
-        // 4. 성공했으면 내 컴퓨터에 "나 여기 썼음!" 하고 기록장(localStorage)에 추가
         myReviews.push(currentReviewPlaceId);
         localStorage.setItem('myReviewedPlaces', JSON.stringify(myReviews));
 
@@ -620,14 +594,21 @@ window.openReadReviewModal = async function(placeId) {
                     else dateStr = dateObj.toLocaleString('ja-JP');
                 }
 
-                // 텍스트에 따옴표가 있으면 오류나니까 안전하게 처리
+                // ⭐ [핵심] 국기 아이콘 결정
+                // 데이터에 country가 있으면 그 나라 국기, 없으면(옛날 글) 지구본(🌏)
+                let flagIcon = "🌏"; 
+                if (data.country === 'KR') flagIcon = "🇰🇷";
+                else if (data.country === 'JP') flagIcon = "🇯🇵";
+
                 const safeText = data.text.replace(/"/g, '&quot;').replace(/'/g, "&#39;");
                 const btnText = currentLang === 'ko' ? "🤖 번역" : "🤖 翻訳";
 
                 html += `
                     <div class="review-item">
                         <div class="review-header">
-                            <span class="review-stars">${stars}</span>
+                            <div>
+                                <span style="font-size:16px; margin-right:4px;">${flagIcon}</span> <span class="review-stars">${stars}</span>
+                            </div>
                             <span style="color:#aaa; font-size:11px;">${dateStr}</span> 
                         </div>
                         <div class="review-text" id="review-text-${doc.id}" style="margin-bottom: 5px;">${data.text}</div>
