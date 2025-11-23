@@ -98,7 +98,7 @@ const translations = {
 var isMobile = window.innerWidth < 600;
 
 // 모바일이면 줌 7 (멀리), PC면 줌 8 (가깝게)
-var initialZoom = isMobile ? 7 : 8;
+var initialZoom = isMobile ? 7 : 7;
 
 // 중심 좌표: 부산과 후쿠오카의 중간 지점
 var map = L.map('map', { zoomControl: false }).setView([34.4, 129.5], initialZoom);
