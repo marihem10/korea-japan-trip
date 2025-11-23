@@ -743,4 +743,4 @@ async function uploadData() {
     }
     alert("업로드 완료!");
 }
-//uploadData();
+uploadData();
