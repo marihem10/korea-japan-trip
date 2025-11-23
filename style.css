@@ -512,3 +512,15 @@ textarea {
     .weather-header { font-size: 12px; }
     .weather-desc { font-size: 10px; }
 }
+
+body.is-jp .filter-bar {
+        width: 98%; /* 85% -> 95%로 꽉 차게 늘림 */
+        padding-left: 2px; 
+        padding-right: 2px;
+    }
+    
+    /* 일본어일 때는 글자가 기니까 버튼 안쪽 여백도 살짝 줄임 */
+    body.is-jp .filter-btn {
+        padding: 8px 10px; 
+        font-size: 12px; /* 글자 크기도 살짝 줄여서 다 들어가게 */
+    }

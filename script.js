@@ -486,10 +486,15 @@ searchInput.addEventListener('keydown', function(e) {
 // 6. 언어 전환 함수
 // -----------------------------------------------------------
 window.toggleLanguage = function() {
-    // 언어 변경
     currentLang = currentLang === 'ko' ? 'ja' : 'ko';
     
-    // ⭐ [디자인 변경 로직 추가]
+    if (currentLang === 'ja') {
+        document.body.classList.add('is-jp');
+    } else {
+        document.body.classList.remove('is-jp');
+    }
+
+    // 디자인 스위치
     if (currentLang === 'ko') {
         document.getElementById('lang-ko').classList.add('active');
         document.getElementById('lang-ja').classList.remove('active');
@@ -497,15 +502,17 @@ window.toggleLanguage = function() {
         document.getElementById('lang-ko').classList.remove('active');
         document.getElementById('lang-ja').classList.add('active');
     }
+    
     const t = translations[currentLang];
     
-    // 기존 텍스트 변경
+    // 텍스트 변경
     document.getElementById('search-input').placeholder = t.placeholder;
     document.getElementById('btn-all').innerText = t.all;
     document.getElementById('btn-food').innerText = t.food;
     document.getElementById('btn-view').innerText = t.view;
     document.getElementById('btn-culture').innerText = t.culture;
     document.getElementById('btn-station').innerText = t.station;
+
     document.getElementById('exchange-title').innerText = t.exchangeTitle;
     document.getElementById('city-name').innerText = t.cityNeed; 
     document.querySelector('.weather-desc').innerText = t.weatherDesc;
@@ -513,6 +520,7 @@ window.toggleLanguage = function() {
     document.getElementById('modal-read-title').innerText = t.modal_read_title;
     document.getElementById('review-text').placeholder = t.placeholder_review;
     document.getElementById('btn-submit').innerText = t.btn_submit;
+    
     const currentScore = document.getElementById('review-rating').value;
     document.getElementById('rating-value').innerText = currentScore + t.score_unit;
     
