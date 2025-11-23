@@ -732,4 +732,4 @@ async function uploadData() {
     console.log(`✅ 총 ${uploadCount}개의 데이터 업로드 완료.`);
     alert(`데이터 업로드 완료! 총 ${uploadCount}개 항목이 덮어쓰여졌습니다.`);
 }
-//uploadData();
+uploadData();
