@@ -708,28 +708,12 @@ window.translateReview = async function(docId, text) {
 // 8. 데이터 업로드 (필요할 때만 주석 풀기)
 // -----------------------------------------------------------
 async function uploadData() {
-    // 확인 팝업의 텍스트를 "덮어쓰기"로 명확히 수정
-    if (!confirm("데이터를 업로드하시겠습니까? (기존 데이터는 덮어쓰여집니다)")) return;
-    
+    const placesCol = collection(db, "places");
+    if (!confirm("데이터를 업로드하시겠습니까?")) return;
     console.log(`총 ${initialData.length}개 업로드 시작...`);
-    
-    let uploadCount = 0;
-    
     for (const item of initialData) {
-        // 1. 장소 이름을 기반으로 고유 ID 생성 (특수문자 및 공백 제거)
-        // 이 고유 ID가 Firebase 문서 ID로 사용됩니다.
-        const uniqueId = item.name.replace(/[^a-zA-Z0-9가-힣]/g, ''); 
-        
-        try {
-            // 2. addDoc 대신 setDoc 사용: 중복 방지
-            await setDoc(doc(db, "places", uniqueId), item);
-            uploadCount++;
-        } catch (e) { 
-            console.error("데이터 업로드 중 오류 발생:", item.name, e); 
-        }
+        try { await addDoc(placesCol, item); } catch (e) { console.error(e); }
     }
-    
-    console.log(`✅ 총 ${uploadCount}개의 데이터 업로드 완료.`);
-    alert(`데이터 업로드 완료! 총 ${uploadCount}개 항목이 덮어쓰여졌습니다.`);
+    alert("업로드 완료!");
 }
-//uploadData();
+uploadData();
