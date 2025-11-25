@@ -448,53 +448,52 @@ textarea {
 /* 📱 모바일 화면 최적화 (화면 너비 600px 이하일 때) */
 /* ================================================= */
 @media (max-width: 600px) {
-    /* 1. 언어 버튼: 크기 축소 */
+    /* 1. 언어 버튼: 왼쪽 상단 유지 */
     .lang-switch-container {
-        top: 10px;
-        left: 10px;
-        transform: scale(0.85); /* 85% 크기로 축소 */
+        top: 15px;
+        left: 15px;
+        transform: scale(0.9); 
         transform-origin: top left;
         z-index: 1001;
     }
 
-    /* 2. 검색바: 너비 확대 및 위치 조정 */
+    /* 2. 검색바: 언어 버튼 '아래'로 이동 & 중앙 정렬 */
     .search-bar {
-        top: 10px;
-        width: calc(100% - 130px); /* 공간 확보 */
-        right: 10px;
-        left: auto;
-        transform: none;
+        top: 60px; /* 언어 버튼 높이만큼 아래로 내림 */
+        width: 94%; /* 화면 꽉 차게 넓힘 */
+        left: 50%;  /* 중앙 정렬 */
+        right: auto;
+        transform: translateX(-50%); /* 정확한 중앙 정렬 */
         padding: 8px 15px;
         z-index: 1000;
+        background: rgba(255, 255, 255, 0.98); /* 배경 좀 더 불투명하게 */
     }
     .search-bar input {
-        font-size: 14px;
+        font-size: 15px; /* 글씨 크기 살짝 키움 */
     }
 
-    /* 3. 필터바: 화면 상단 중앙 배치 및 버튼 크기 조정 */
+    /* 3. 필터바: 검색바 '아래'로 더 이동 */
     .filter-bar {
-        top: 60px; /* 검색바 아래로 이동 */
-        width: 95%; /* 너비 확대 */
-        padding: 8px; /* 패딩 감소 */
+        top: 105px; /* ⭐ 여기를 105px로 수정하세요 */
+        width: 94%; 
+        padding: 8px; 
         
         border-radius: 30px;
         background: white;
         box-shadow: 0 4px 10px rgba(0,0,0,0.1);
-        z-index: 1900;
+        z-index: 1000;
     }
 
     .filter-btn {
-        flex: 1; /* ⭐ [수정] 모든 버튼이 공평한 너비를 가짐 */
+        flex: 1; 
         white-space: nowrap;
-        font-size: 12px; /* 글자가 길어질 수 있으니 살짝 줄임 */
-        padding: 8px 0; /* 좌우 패딩을 없애고 flex로 조절 */
+        font-size: 12px; 
+        padding: 8px 0; 
         text-align: center;
-        
         border-radius: 25px; 
-        box-shadow: none; /* 깔끔하게 그림자 제거 */
+        box-shadow: none; 
     }
     
-    /* 선택된 버튼만 그림자 효과 */
     .filter-btn.active {
         box-shadow: 0 2px 5px rgba(0,0,0,0.2) !important;
     }
@@ -508,7 +507,7 @@ textarea {
         
         min-width: auto;
         padding: 8px 12px;
-        transform: scale(0.9); /* 90% 크기 */
+        transform: scale(0.9); 
         transform-origin: bottom left;
         z-index: 2000;
     }
@@ -524,7 +523,7 @@ textarea {
         
         min-width: auto;
         padding: 8px 12px;
-        transform: scale(0.9); /* 90% 크기 */
+        transform: scale(0.9); 
         transform-origin: bottom right;
         z-index: 2000;
     }
@@ -535,10 +534,10 @@ textarea {
     .bottom-cards {
         padding: 0 10px;
         gap: 10px;
-        bottom: calc(10px + env(safe-area-inset-bottom)); /* 아이폰 하단 바 영역 고려 */
+        bottom: calc(10px + env(safe-area-inset-bottom)); 
     }
     .card {
-        min-width: 200px; /* 모바일에서 카드 너비 조정 */
+        min-width: 200px; 
         height: 120px;
     }
     .card-info { padding: 10px; }
