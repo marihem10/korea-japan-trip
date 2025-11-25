@@ -101,14 +101,16 @@ var isMobile = window.innerWidth < 600;
 // 모바일이면 줌 7 (멀리), PC면 줌 8 (가깝게)
 var initialZoom = isMobile ? 7 : 7;
 
-// 중심 좌표: 부산과 후쿠오카의 중간 지점
+// 1. 지도 생성 (초기 좌표: 부산과 후쿠오카 사이 바다, 줌 레벨 설정)
 var map = L.map('map', { zoomControl: false }).setView([34.4, 129.5], initialZoom);
 
+// 2. 오픈스트리트맵(OSM) 타일 레이어 추가 (지도 그림 불러오기)
 L.tileLayer('https://{s}.basemaps.cartocdn.com/rastertiles/voyager/{z}/{x}/{y}{r}.png', {
     attribution: '&copy; OpenStreetMap contributors'
 }).addTo(map);
 L.control.zoom({ position: 'bottomright' }).addTo(map);
 
+// 3. 마커 클러스터 그룹 생성 (마커들이 뭉치는 기능)
 var markerCluster = L.markerClusterGroup({
     maxClusterRadius: 50,      // 마커를 묶는 최대 반경 (50px)
     disableClusteringAtZoom: 13, // 클러스터링 해제 Zoom Level (13)
@@ -158,6 +160,7 @@ let currentEditingReviewId = null; // ⭐ 리뷰 수정 중인지 확인하는 �
 // -----------------------------------------------------------
 // 4. 기능 함수들 (환율, 날씨)
 // ----------------------------------------------------------
+// [환율 API] ExchangeRate-API 사용
 async function fetchExchangeRate() {
     const diffEl = document.querySelector('.exchange-diff');
     const descEl = document.querySelector('.exchange-desc');
@@ -200,7 +203,7 @@ async function fetchExchangeRate() {
 }
 fetchExchangeRate(); 
 
-// ⭐ [window 할당] 날씨 확인 함수
+// [날씨 API] Open-Meteo API 사용
 window.fetchWeather = async function(lat, lng, cityName) {
     try {
         const t = translations[currentLang]; 
@@ -246,6 +249,7 @@ var allMarkers = {}; // 마커 객체를 ID로 저장할 맵
 
 const placesCol = collection(db, "places");
 
+// Firestore의 'places' 컬렉션 구독(Listening)
 onSnapshot(placesCol, (snapshot) => {
     try {
         locations = []; 
@@ -896,7 +900,7 @@ window.openReadReviewModal = async function(placeId) {
             let adminButtons = '';
             // 해당 리뷰의 작성자가 '로컬 리뷰 기록'에 있는 경우에만 수정/삭제 버튼 표시
             if (isPlaceReviewedByMe) {
-                 adminButtons = `
+                adminButtons = `
                     <button onclick="window.openEditModal('${reviewDocId}', '${placeId}', '${safeName}', '${safeNickname}', '${safeText}', ${data.rating})"
                             style="font-size:11px; background:#f1c40f; border:none; border-radius:12px; padding:4px 10px; cursor:pointer; color:white; display:inline-flex; align-items:center; gap:4px;">
                         <i class="fas fa-edit"></i> ${currentLang === 'ko' ? '수정' : '修正'}
@@ -953,6 +957,7 @@ window.openReadReviewModal = async function(placeId) {
 // ==========================================================
 // ⭐ [수정됨] 번역 기능: 한국어 <-> 일본어 무조건 상호 교차 번역 (Unconditional FLIP)
 // ==========================================================
+// [번역 기능] Google Translate API 활용 (FLIP 로직)
 window.translateReview = async function(docId, text) {
     const resultBox = document.getElementById(`trans-result-${docId}`);
     
@@ -1119,4 +1124,4 @@ async function uploadData() {
     }
     alert("업로드 완료!");
 }
-//uploadData();
+uploadData();
